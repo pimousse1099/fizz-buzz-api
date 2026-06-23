@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"testing"
 
 	"github.com/Pimousse1099/fizz-buzz-api/infrastructure/statstorer"
@@ -46,7 +47,7 @@ func TestGenerateFizzBuzz_OK(t *testing.T) {
 	}
 
 	want := []string{"1", "2", fizz, "4", buzz}
-	if len(got) != len(want) {
+	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("got %v, want %v", got, want)
 	}
 }
