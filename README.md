@@ -26,3 +26,35 @@ multiples of 3 by "fizz", all multiples of 5 by "buzz", and all multiples of 15 
 >   - Return the parameters corresponding to the most used request, as well as the number of
     hits for this request
 ---
+
+## Run & evaluate
+
+Requirements: Go 1.26+.
+
+```sh
+# Run the server (defaults to :8080)
+go run ./cmd
+
+# Generate
+curl 'http://localhost:8080/fizzbuzz?int1=3&int2=5&limit=15&str1=fizz&str2=buzz'
+
+# Most frequent request (404 until at least one successful generation)
+curl 'http://localhost:8080/fizzbuzz/stats'
+
+# Health
+curl http://localhost:8080/healthz
+```
+
+Configuration (environment variables): `HTTP_ADDR` (`:8080`), `MAX_LIMIT` (`10000`),
+`RATE_LIMIT_PER_SEC` (`50`), `RATE_LIMIT_BURST` (`100`), `READ_HEADER_TIMEOUT` (`2s`),
+`WRITE_TIMEOUT` (`10s`), `IDLE_TIMEOUT` (`120s`), `LOG_LEVEL` (`info`).
+
+Development:
+
+```sh
+make build   # go build ./...
+make race    # go test -race ./...
+make lint    # golangci-lint run
+```
+
+Architecture decisions: see `docs/architecture-decision-records/2026-06-23-fizz-buzz-api.md`.
