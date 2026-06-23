@@ -1,0 +1,103 @@
+version: "2"
+
+run:
+  timeout: 5m
+
+linters:
+  default: none
+  enable:
+    - bodyclose
+    - contextcheck
+    - cyclop
+    - dogsled
+    - dupl
+    - durationcheck
+    - errcheck
+    - errname
+    - errorlint
+    - err113
+    - exhaustive
+    - forbidigo
+    - forcetypeassert
+    - funlen
+    - gochecknoglobals
+    - gochecknoinits
+    - gocognit
+    - goconst
+    - gocritic
+    - godot
+    - goprintffuncname
+    - gosec
+    - govet
+    - importas
+    - inamedparam
+    - ineffassign
+    - lll
+    - makezero
+    - mirror
+    - misspell
+    - mnd
+    - nakedret
+    - nestif
+    - nilerr
+    - nilnil
+    - nlreturn
+    - noctx
+    - nolintlint
+    - paralleltest
+    - prealloc
+    - predeclared
+    - reassign
+    - revive
+    - sloglint
+    - staticcheck
+    - testableexamples
+    - testpackage
+    - thelper
+    - tparallel
+    - unconvert
+    - unparam
+    - unused
+    - usestdlibvars
+    - usetesting
+    - wastedassign
+    - whitespace
+    - wsl
+  settings:
+    cyclop:
+      max-complexity: 15
+    dupl:
+      threshold: 100
+    funlen:
+      lines: 100
+      statements: 50
+    goconst:
+      min-len: 2
+      min-occurrences: 2
+    gocritic:
+      enabled-tags:
+        - diagnostic
+        - opinionated
+        - performance
+        - style
+    lll:
+      line-length: 150
+    misspell:
+      locale: US
+  exclusions:
+    rules:
+      - linters: [funlen, dupl, err113, gochecknoglobals]
+        path: _test\.go
+
+formatters:
+  enable:
+    - gci
+    - gofumpt
+  settings:
+    gci:
+      sections:
+        - standard
+        - default
+        - prefix(github.com/Pimousse1099)
+    gofumpt:
+      extra-rules: true
