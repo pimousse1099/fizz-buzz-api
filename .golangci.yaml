@@ -86,7 +86,11 @@ linters:
       locale: US
   exclusions:
     rules:
-      - linters: [funlen, dupl, err113, gochecknoglobals]
+      # Test files: relax linters that are noisy on test fixtures and tables —
+      # repeated literal fixtures (goconst), table-driven one-liner closures
+      # (nlreturn), long table funcs (funlen), duplicated arrange blocks (dupl),
+      # dynamic test errors (err113) and test-local globals (gochecknoglobals).
+      - linters: [funlen, dupl, err113, gochecknoglobals, goconst, nlreturn]
         path: _test\.go
 
 formatters:
