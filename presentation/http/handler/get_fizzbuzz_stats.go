@@ -37,8 +37,8 @@ func newStatsDTO(resp fizzbuzz.GetStatsResponse) statsDTO {
 
 // GetFizzBuzzStats returns the most frequent request as JSON, or 404 if none.
 func GetFizzBuzzStats(uc *usecase.GetFizzBuzzStats, logger *slog.Logger) http.HandlerFunc {
-	return func(w http.ResponseWriter, _ *http.Request) {
-		resp, err := uc.Execute(fizzbuzz.GetStatsRequest{})
+	return func(w http.ResponseWriter, r *http.Request) {
+		resp, err := uc.Execute(r.Context(), fizzbuzz.GetStatsRequest{})
 		if err != nil {
 			if errors.Is(err, fizzbuzz.ErrNoStatsRecorded) {
 				writeError(w, http.StatusNotFound, "no statistics recorded yet")

@@ -1,6 +1,7 @@
 package ratelimiter_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/Pimousse1099/fizz-buzz-api/infrastructure/ratelimiter"
@@ -13,12 +14,12 @@ func TestInMemory_AllowsUpToBurstThenRejects(t *testing.T) {
 	l := ratelimiter.NewInMemory(0, 3)
 
 	for i := range 3 {
-		if !l.Allow() {
+		if !l.Allow(context.Background()) {
 			t.Fatalf("call %d should be allowed within burst", i+1)
 		}
 	}
 
-	if l.Allow() {
+	if l.Allow(context.Background()) {
 		t.Fatal("call beyond burst should be rejected")
 	}
 }

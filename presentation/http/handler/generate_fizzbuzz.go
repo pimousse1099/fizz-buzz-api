@@ -20,7 +20,7 @@ func GenerateFizzBuzz(uc *usecase.GenerateFizzBuzz, logger *slog.Logger) http.Ha
 			return
 		}
 
-		resp, err := uc.Execute(req)
+		resp, err := uc.Execute(r.Context(), req)
 		if err != nil {
 			if errors.Is(err, fizzbuzz.ErrFailedToValidateGenerateRequest) {
 				writeError(w, http.StatusBadRequest, err.Error())

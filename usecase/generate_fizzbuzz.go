@@ -4,6 +4,7 @@
 package usecase
 
 import (
+	"context"
 	"strconv"
 
 	"github.com/Pimousse1099/fizz-buzz-api/domain/fizzbuzz"
@@ -11,7 +12,7 @@ import (
 
 // StatRecorder records a successful generation request for statistics.
 type StatRecorder interface {
-	Record(req fizzbuzz.GenerateRequest)
+	Record(ctx context.Context, req fizzbuzz.GenerateRequest)
 }
 
 // GenerateFizzBuzz validates a request, generates the sequence, and records the
@@ -29,7 +30,7 @@ func NewGenerateFizzBuzz(maxLimit int, recorder StatRecorder) *GenerateFizzBuzz 
 // Execute validates the request, generates the fizz-buzz sequence, and records
 // the request. The generation is the application's business logic and lives
 // here rather than on the domain type.
-func (uc *GenerateFizzBuzz) Execute(req fizzbuzz.GenerateRequest) (fizzbuzz.GenerateResponse, error) {
+func (uc *GenerateFizzBuzz) Execute(ctx context.Context, req fizzbuzz.GenerateRequest) (fizzbuzz.GenerateResponse, error) {
 	if err := req.Validate(uc.maxLimit); err != nil {
 		return fizzbuzz.GenerateResponse{}, err
 	}
@@ -49,7 +50,7 @@ func (uc *GenerateFizzBuzz) Execute(req fizzbuzz.GenerateRequest) (fizzbuzz.Gene
 		}
 	}
 
-	uc.recorder.Record(req)
+	uc.recorder.Record(ctx, req)
 
 	return fizzbuzz.GenerateResponse{Result: result}, nil
 }

@@ -32,7 +32,7 @@ func TestGetFizzBuzzStats_OK(t *testing.T) {
 	t.Parallel()
 
 	store := statstorer.NewInMemory()
-	store.Record(fizzbuzz.GenerateRequest{Int1: 3, Int2: 5, Limit: 100, Str1: fizz, Str2: buzz})
+	store.Record(context.Background(), fizzbuzz.GenerateRequest{Int1: 3, Int2: 5, Limit: 100, Str1: fizz, Str2: buzz})
 
 	uc := usecase.NewGetFizzBuzzStats(store)
 	h := handler.GetFizzBuzzStats(uc, slog.New(slog.DiscardHandler))

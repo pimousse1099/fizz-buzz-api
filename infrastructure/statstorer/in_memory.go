@@ -3,6 +3,7 @@
 package statstorer
 
 import (
+	"context"
 	"sync"
 
 	"github.com/Pimousse1099/fizz-buzz-api/domain/fizzbuzz"
@@ -25,7 +26,7 @@ func NewInMemory() *InMemory {
 }
 
 // Record increments the counter for req.
-func (s *InMemory) Record(req fizzbuzz.GenerateRequest) {
+func (s *InMemory) Record(_ context.Context, req fizzbuzz.GenerateRequest) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -39,7 +40,7 @@ func (s *InMemory) Record(req fizzbuzz.GenerateRequest) {
 
 // MostFrequent returns the most frequent request, its hit count, and whether
 // any request has been recorded.
-func (s *InMemory) MostFrequent() (fizzbuzz.GenerateRequest, int, bool) {
+func (s *InMemory) MostFrequent(_ context.Context) (fizzbuzz.GenerateRequest, int, bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 

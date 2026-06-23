@@ -6,7 +6,11 @@
 // ingress / load balancer) or a shared store; see the project ADR.
 package ratelimiter
 
-import "golang.org/x/time/rate"
+import (
+	"context"
+
+	"golang.org/x/time/rate"
+)
 
 // InMemory is a token-bucket limiter backed by golang.org/x/time/rate.
 type InMemory struct {
@@ -20,6 +24,6 @@ func NewInMemory(perSecond float64, burst int) *InMemory {
 }
 
 // Allow reports whether a request may proceed now (non-blocking).
-func (l *InMemory) Allow() bool {
+func (l *InMemory) Allow(_ context.Context) bool {
 	return l.limiter.Allow()
 }

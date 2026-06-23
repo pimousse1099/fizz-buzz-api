@@ -1,6 +1,7 @@
 package usecase_test
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -14,7 +15,7 @@ type stubReader struct {
 	ok   bool
 }
 
-func (s stubReader) MostFrequent() (fizzbuzz.GenerateRequest, int, bool) {
+func (s stubReader) MostFrequent(_ context.Context) (fizzbuzz.GenerateRequest, int, bool) {
 	return s.req, s.hits, s.ok
 }
 
@@ -24,7 +25,7 @@ func TestGetFizzBuzzStats_Execute_WithData(t *testing.T) {
 	want := fizzbuzz.GenerateRequest{Int1: 3, Int2: 5, Limit: 100, Str1: "fizz", Str2: "buzz"}
 	uc := usecase.NewGetFizzBuzzStats(stubReader{req: want, hits: 7, ok: true})
 
-	resp, err := uc.Execute(fizzbuzz.GetStatsRequest{})
+	resp, err := uc.Execute(context.Background(), fizzbuzz.GetStatsRequest{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -39,7 +40,7 @@ func TestGetFizzBuzzStats_Execute_Empty(t *testing.T) {
 
 	uc := usecase.NewGetFizzBuzzStats(stubReader{ok: false})
 
-	_, err := uc.Execute(fizzbuzz.GetStatsRequest{})
+	_, err := uc.Execute(context.Background(), fizzbuzz.GetStatsRequest{})
 	if !errors.Is(err, fizzbuzz.ErrNoStatsRecorded) {
 		t.Fatalf("expected ErrNoStatsRecorded, got %v", err)
 	}

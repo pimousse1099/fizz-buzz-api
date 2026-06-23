@@ -1,6 +1,7 @@
 package server_test
 
 import (
+	"context"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
@@ -15,7 +16,7 @@ func discardLogger() *slog.Logger {
 
 type stubLimiter struct{ allow bool }
 
-func (s stubLimiter) Allow() bool { return s.allow }
+func (s stubLimiter) Allow(_ context.Context) bool { return s.allow }
 
 func TestRecovery_TurnsPanicInto500(t *testing.T) {
 	t.Parallel()

@@ -1,6 +1,7 @@
 package usecase_test
 
 import (
+	"context"
 	"errors"
 	"reflect"
 	"testing"
@@ -13,7 +14,7 @@ type spyRecorder struct {
 	recorded []fizzbuzz.GenerateRequest
 }
 
-func (s *spyRecorder) Record(req fizzbuzz.GenerateRequest) {
+func (s *spyRecorder) Record(_ context.Context, req fizzbuzz.GenerateRequest) {
 	s.recorded = append(s.recorded, req)
 }
 
@@ -48,7 +49,7 @@ func TestGenerateFizzBuzz_Execute_Output(t *testing.T) {
 
 			uc := usecase.NewGenerateFizzBuzz(1000, &spyRecorder{})
 
-			resp, err := uc.Execute(tt.req)
+			resp, err := uc.Execute(context.Background(), tt.req)
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
@@ -67,7 +68,7 @@ func TestGenerateFizzBuzz_Execute_RecordsOnlyOnSuccess(t *testing.T) {
 	uc := usecase.NewGenerateFizzBuzz(1000, rec)
 	req := fizzbuzz.GenerateRequest{Int1: 3, Int2: 5, Limit: 5, Str1: "fizz", Str2: "buzz"}
 
-	if _, err := uc.Execute(req); err != nil {
+	if _, err := uc.Execute(context.Background(), req); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
@@ -83,7 +84,7 @@ func TestGenerateFizzBuzz_Execute_Invalid(t *testing.T) {
 	uc := usecase.NewGenerateFizzBuzz(1000, rec)
 	req := fizzbuzz.GenerateRequest{Int1: 0, Int2: 5, Limit: 5, Str1: "fizz", Str2: "buzz"}
 
-	_, err := uc.Execute(req)
+	_, err := uc.Execute(context.Background(), req)
 	if !errors.Is(err, fizzbuzz.ErrFailedToValidateGenerateRequest) {
 		t.Fatalf("expected validation error, got %v", err)
 	}

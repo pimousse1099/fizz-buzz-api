@@ -2,6 +2,7 @@
 package server
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"log/slog"
@@ -16,7 +17,7 @@ const (
 
 // RateLimiter decides whether a request may proceed now.
 type RateLimiter interface {
-	Allow() bool
+	Allow(ctx context.Context) bool
 }
 
 // statusRecorder captures the response status code for logging.
@@ -84,7 +85,7 @@ func Logging(logger *slog.Logger) func(http.Handler) http.Handler {
 func RateLimit(limiter RateLimiter) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if !limiter.Allow() {
+			if !limiter.Allow(r.Context()) {
 				http.Error(w, "too many requests", http.StatusTooManyRequests)
 
 				return

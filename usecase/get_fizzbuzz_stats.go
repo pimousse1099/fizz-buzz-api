@@ -1,10 +1,14 @@
 package usecase
 
-import "github.com/Pimousse1099/fizz-buzz-api/domain/fizzbuzz"
+import (
+	"context"
+
+	"github.com/Pimousse1099/fizz-buzz-api/domain/fizzbuzz"
+)
 
 // StatReader reads the most frequently recorded generation request.
 type StatReader interface {
-	MostFrequent() (req fizzbuzz.GenerateRequest, hits int, ok bool)
+	MostFrequent(ctx context.Context) (req fizzbuzz.GenerateRequest, hits int, ok bool)
 }
 
 // GetFizzBuzzStats returns the most frequent request and its hit count.
@@ -18,8 +22,8 @@ func NewGetFizzBuzzStats(reader StatReader) *GetFizzBuzzStats {
 }
 
 // Execute returns the most frequent request, or ErrNoStatsRecorded if none.
-func (uc *GetFizzBuzzStats) Execute(_ fizzbuzz.GetStatsRequest) (fizzbuzz.GetStatsResponse, error) {
-	req, hits, ok := uc.reader.MostFrequent()
+func (uc *GetFizzBuzzStats) Execute(ctx context.Context, _ fizzbuzz.GetStatsRequest) (fizzbuzz.GetStatsResponse, error) {
+	req, hits, ok := uc.reader.MostFrequent(ctx)
 	if !ok {
 		return fizzbuzz.GetStatsResponse{}, fizzbuzz.ErrNoStatsRecorded
 	}
