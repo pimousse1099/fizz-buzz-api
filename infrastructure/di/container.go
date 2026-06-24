@@ -10,6 +10,7 @@ import (
 
 	"github.com/Pimousse1099/fizz-buzz-api/config"
 	"github.com/Pimousse1099/fizz-buzz-api/infrastructure/statstorer"
+	"github.com/Pimousse1099/fizz-buzz-api/presentation/http/middleware"
 	"github.com/Pimousse1099/fizz-buzz-api/presentation/http/server"
 	"github.com/Pimousse1099/fizz-buzz-api/usecase"
 )
@@ -21,8 +22,8 @@ type Container struct {
 
 	logger      *slog.Logger
 	statStore   *statstorer.InMemory
-	rateLimiter server.RateLimiter
-	httpServer  *server.Server
+	rateLimiter httpmiddleware.RateLimiter
+	httpServer  *httpserver.Server
 
 	generateFizzBuzzUseCase *usecase.GenerateFizzBuzz
 	getFizzBuzzStatsUseCase *usecase.GetFizzBuzzStats

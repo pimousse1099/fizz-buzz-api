@@ -1,4 +1,6 @@
-package server
+// Package httpserver wires the HTTP router and the server lifecycle. It lives in
+// the directory presentation/http/server.
+package httpserver
 
 import (
 	"context"

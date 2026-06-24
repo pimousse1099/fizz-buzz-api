@@ -1,4 +1,4 @@
-package handler_test
+package httphandler_test
 
 import (
 	"context"
@@ -18,7 +18,7 @@ func TestGetFizzBuzzStats_Empty404(t *testing.T) {
 	t.Parallel()
 
 	uc := usecase.NewGetFizzBuzzStats(statstorer.NewInMemory())
-	h := handler.GetFizzBuzzStats(uc, slog.New(slog.DiscardHandler))
+	h := httphandler.GetFizzBuzzStats(uc, slog.New(slog.DiscardHandler))
 
 	rec := httptest.NewRecorder()
 	h.ServeHTTP(rec, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/fizzbuzz/stats", http.NoBody))
@@ -35,7 +35,7 @@ func TestGetFizzBuzzStats_OK(t *testing.T) {
 	store.RecordFizzBuzzStat(context.Background(), fizzbuzz.GenerateRequest{Int1: 3, Int2: 5, Limit: 100, Str1: fizz, Str2: buzz})
 
 	uc := usecase.NewGetFizzBuzzStats(store)
-	h := handler.GetFizzBuzzStats(uc, slog.New(slog.DiscardHandler))
+	h := httphandler.GetFizzBuzzStats(uc, slog.New(slog.DiscardHandler))
 
 	rec := httptest.NewRecorder()
 	h.ServeHTTP(rec, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/fizzbuzz/stats", http.NoBody))

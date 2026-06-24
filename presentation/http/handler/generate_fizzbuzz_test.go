@@ -1,4 +1,4 @@
-package handler_test
+package httphandler_test
 
 import (
 	"context"
@@ -22,7 +22,7 @@ const (
 func newGenerateHandler() http.HandlerFunc {
 	uc := usecase.NewGenerateFizzBuzz(10000, statstorer.NewInMemory())
 
-	return handler.GenerateFizzBuzz(uc, slog.New(slog.DiscardHandler))
+	return httphandler.GenerateFizzBuzz(uc, slog.New(slog.DiscardHandler))
 }
 
 func TestGenerateFizzBuzz_OK(t *testing.T) {

@@ -1,7 +1,7 @@
-// Package handler contains the HTTP handlers and their shared response helpers.
-// The standard library offers no JSON response helper (only http.Error for
-// plain text) and no constant for the JSON content type, so both live here.
-package handler
+// Package httphandler contains the HTTP handlers and their shared response
+// helpers. The standard library offers no JSON response helper (only http.Error
+// for plain text) and no constant for the JSON content type, so both live here.
+package httphandler
 
 import (
 	"encoding/json"

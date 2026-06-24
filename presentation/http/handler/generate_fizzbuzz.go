@@ -1,4 +1,4 @@
-package handler
+package httphandler
 
 import (
 	"errors"
@@ -12,6 +12,9 @@ import (
 	"github.com/Pimousse1099/fizz-buzz-api/presentation/http/reqctx"
 	"github.com/Pimousse1099/fizz-buzz-api/usecase"
 )
+
+// GenerateFizzBuzzRoute is the ServeMux pattern for the generate endpoint.
+const GenerateFizzBuzzRoute = "GET /fizzbuzz"
 
 var errInvalidQueryParam = errors.New("invalid or missing query parameter")
 

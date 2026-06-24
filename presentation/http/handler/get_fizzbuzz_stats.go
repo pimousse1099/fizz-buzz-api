@@ -1,4 +1,4 @@
-package handler
+package httphandler
 
 import (
 	"errors"
@@ -9,6 +9,9 @@ import (
 	"github.com/Pimousse1099/fizz-buzz-api/presentation/http/reqctx"
 	"github.com/Pimousse1099/fizz-buzz-api/usecase"
 )
+
+// GetFizzBuzzStatsRoute is the ServeMux pattern for the statistics endpoint.
+const GetFizzBuzzStatsRoute = "GET /fizzbuzz/stats"
 
 // GetFizzBuzzStats returns the most frequent request as JSON, or 404 if none.
 // The domain GetStatsResponse is serialized directly (it carries the JSON tags).

@@ -1,6 +1,7 @@
-package server_test
+package httpserver_test
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -20,7 +21,10 @@ func TestNewRouter_RoutesAndHealthz(t *testing.T) {
 		_, _ = w.Write([]byte("stats"))
 	}
 
-	router := server.NewRouter(generate, stats)
+	router := httpserver.NewRouter(
+		httpserver.Route{Pattern: "GET /fizzbuzz", Handler: generate},
+		httpserver.Route{Pattern: "GET /fizzbuzz/stats", Handler: stats},
+	)
 
 	cases := []struct {
 		path     string
@@ -38,7 +42,7 @@ func TestNewRouter_RoutesAndHealthz(t *testing.T) {
 			t.Parallel()
 
 			rec := httptest.NewRecorder()
-			router.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, tc.path, http.NoBody)) //nolint:noctx // test helper
+			router.ServeHTTP(rec, httptest.NewRequestWithContext(context.Background(), http.MethodGet, tc.path, http.NoBody))
 
 			if rec.Code != tc.wantCode {
 				t.Fatalf("path %s: status = %d, want %d", tc.path, rec.Code, tc.wantCode)
@@ -54,13 +58,12 @@ func TestNewRouter_RoutesAndHealthz(t *testing.T) {
 func TestNewRouter_MethodNotAllowed(t *testing.T) {
 	t.Parallel()
 
-	router := server.NewRouter(
-		func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) },
-		func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) },
+	router := httpserver.NewRouter(
+		httpserver.Route{Pattern: "GET /fizzbuzz", Handler: func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) }},
 	)
 
 	rec := httptest.NewRecorder()
-	router.ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/fizzbuzz", http.NoBody)) //nolint:noctx // test helper
+	router.ServeHTTP(rec, httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/fizzbuzz", http.NoBody))
 
 	if rec.Code != http.StatusMethodNotAllowed {
 		t.Fatalf("status = %d, want 405", rec.Code)
