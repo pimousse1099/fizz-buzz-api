@@ -87,7 +87,10 @@ func main() {
 
 	logger.Info("shutting down HTTP server", "http_shutdown_timeout", shutdownTimeout.String())
 
-	shutdownCtx, shutdownCancel := context.WithTimeout(ctx, shutdownTimeout)
+	// Shutdown uses a fresh context (not the app's base ctx): a cleanup deadline
+	// must not inherit cancellation from a context that may already be canceled,
+	// otherwise graceful draining would abort immediately.
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), shutdownTimeout)
 	defer shutdownCancel()
 
 	stopErr := httpSrv.Stop(shutdownCtx)
