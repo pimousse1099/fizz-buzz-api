@@ -40,14 +40,23 @@ func GenerateFizzBuzz(uc *usecase.GenerateFizzBuzz) http.HandlerFunc {
 
 		req, err := parseGenerateRequest(r)
 		if err != nil {
-			writeServiceError(w, l, err)
+			l.Warn("failed to parse query parameters", "error", err)
+			writeError(w, http.StatusBadRequest, err.Error())
 
 			return
 		}
 
 		resp, err := uc.Execute(r.Context(), *req)
 		if err != nil {
-			writeServiceError(w, l, err)
+			if errors.Is(err, fizzbuzz.ErrFailedToValidateGenerateRequest) {
+				l.Warn("failed to validate request", "error", err)
+				writeError(w, http.StatusBadRequest, err.Error())
+
+				return
+			}
+
+			l.Error("failed to execute use-case", "error", err)
+			writeError(w, http.StatusInternalServerError, "internal server error")
 
 			return
 		}

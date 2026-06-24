@@ -54,7 +54,7 @@ func main() {
 	case sig := <-signalChan:
 		logger.Info("received shutdown signal", "signal", sig.String())
 	case startErr := <-errChan:
-		logger.Error("HTTP server failed", "error", startErr)
+		logger.Error("failed to run HTTP server", "error", startErr)
 	}
 
 	logger.Info("shutting down HTTP server", "http_shutdown_timeout", shutdownTimeout.String())
