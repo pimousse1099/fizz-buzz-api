@@ -9,9 +9,9 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/httplog/v2"
+	"github.com/go-chi/httprate"
 
 	"github.com/Pimousse1099/fizz-buzz-api/presentation/http/handler"
-	"github.com/Pimousse1099/fizz-buzz-api/presentation/http/middleware"
 	"github.com/Pimousse1099/fizz-buzz-api/presentation/http/server"
 )
 
@@ -38,13 +38,15 @@ func (c *Container) GetHTTPServer() *httpserver.Server {
 
 // getHTTPHandler builds the chi router and its middleware stack. Order (outer to
 // inner): request-id, structured request logging, panic recovery, rate-limit.
+// The rate limiter is per-IP (local guard); a distributed counter is available
+// via go-chi/httprate-redis (httprate.WithLimitCounter) — see the ADR.
 func (c *Container) getHTTPHandler() http.Handler {
 	router := chi.NewRouter()
 
 	router.Use(middleware.RequestID)
 	router.Use(httplog.RequestLogger(c.getHTTPLogger()))
 	router.Use(middleware.Recoverer)
-	router.Use(httpmiddleware.RateLimit(c.getRateLimiter()))
+	router.Use(httprate.LimitByIP(c.config.HTTP.RateLimitRequests, c.config.HTTP.RateLimitWindow))
 
 	router.Get("/healthz", func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) })
 	router.Get(httphandler.GenerateFizzBuzzRoute, httphandler.GenerateFizzBuzz(c.getGenerateFizzBuzzUseCase()))

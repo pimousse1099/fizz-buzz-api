@@ -346,11 +346,23 @@ meaningful amount of hand-rolled, edge-case-prone plumbing.
 package. Business route patterns are now path-only constants next to their handlers
 (`GenerateFizzBuzzRoute = "/fizzbuzz"`), wired via `r.Get`.
 
-**Kept in-house:** the rate limiter (`infrastructure/ratelimiter` + `httpmiddleware.RateLimit`),
-since chi provides concurrency throttling but not req/s limiting, and the Redis-stub extensibility
-(§2.11) is worth preserving. `httpserver.Server` still owns the `http.Server` lifecycle
-(Start/Stop), which chi does not manage.
+**Rate limiting → `github.com/go-chi/httprate`** (this corrects §2.11): `httprate.LimitByIP`
+limits N requests per window **per client IP** (more correct than the previous single global
+token-bucket), returning `429` with `Retry-After`/`X-RateLimit-*` headers. This removed the entire
+hand-rolled `infrastructure/ratelimiter` package (in-memory + Redis *stub that panicked*) and the
+`httpmiddleware.RateLimit`/`RateLimiter` seam. The distributed backend is now **real, not a stub**:
+`github.com/go-chi/httprate-redis` provides a `httprate.LimitCounter` that drops in via
+`httprate.Limit(..., httprate.WithLimitCounter(redisCounter))`. We ship the in-memory limiter by
+default (runs with no Redis) and document httprate-redis as the scale-out path — same edge-vs-app
+guidance as §2.11 (authoritative limiting still belongs at the edge).
 
-**Dependencies added:** `github.com/go-chi/chi/v5`, `github.com/go-chi/httplog/v2`. This supersedes
-the "zero web framework" stance of §2.1 and §3 for the transport layer; the domain, use-cases and
-infrastructure remain framework-free.
+**Kept in-house:** only `httpserver.Server`, which owns the `http.Server` lifecycle (Start/Stop,
+timeouts, BaseContext, ErrorLog) — chi is a router only and does not manage the server.
+
+**Dependencies added:** `github.com/go-chi/chi/v5`, `github.com/go-chi/httplog/v2`,
+`github.com/go-chi/httprate` (and `golang.org/x/time/rate` was dropped). This supersedes the "zero
+web framework" stance of §2.1 and §3 for the transport layer; the domain, use-cases and the stat
+store remain framework-free.
+
+**Net effect:** removed the `infrastructure/ratelimiter`, `presentation/http/middleware` and
+`presentation/http/reqctx` packages plus the hand-rolled router — chi/httplog/httprate cover them.

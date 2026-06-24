@@ -36,12 +36,12 @@ type Env struct {
 
 // HTTP holds the HTTP server and edge (rate-limit) configuration.
 type HTTP struct {
-	Addr              string        `env:"ADDR,required"`                  // HTTP_ADDR
-	ReadHeaderTimeout time.Duration `env:"READ_HEADER_TIMEOUT,default=2s"` // HTTP_READ_HEADER_TIMEOUT
-	WriteTimeout      time.Duration `env:"WRITE_TIMEOUT,default=10s"`      // HTTP_WRITE_TIMEOUT
-	IdleTimeout       time.Duration `env:"IDLE_TIMEOUT,default=120s"`      // HTTP_IDLE_TIMEOUT
-	RateLimitPerSec   float64       `env:"RATE_LIMIT_PER_SEC,default=50"`  // HTTP_RATE_LIMIT_PER_SEC
-	RateLimitBurst    int           `env:"RATE_LIMIT_BURST,default=100"`   // HTTP_RATE_LIMIT_BURST
+	Addr              string        `env:"ADDR,required"`                   // HTTP_ADDR
+	ReadHeaderTimeout time.Duration `env:"READ_HEADER_TIMEOUT,default=2s"`  // HTTP_READ_HEADER_TIMEOUT
+	WriteTimeout      time.Duration `env:"WRITE_TIMEOUT,default=10s"`       // HTTP_WRITE_TIMEOUT
+	IdleTimeout       time.Duration `env:"IDLE_TIMEOUT,default=120s"`       // HTTP_IDLE_TIMEOUT
+	RateLimitRequests int           `env:"RATE_LIMIT_REQUESTS,default=100"` // HTTP_RATE_LIMIT_REQUESTS
+	RateLimitWindow   time.Duration `env:"RATE_LIMIT_WINDOW,default=1m"`    // HTTP_RATE_LIMIT_WINDOW
 }
 
 // FizzBuzz holds the business configuration.

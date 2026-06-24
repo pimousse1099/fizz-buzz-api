@@ -55,8 +55,8 @@ Configuration (environment variables), grouped by concern:
 | `HTTP_READ_HEADER_TIMEOUT` | no | `2s` | Read-header timeout |
 | `HTTP_WRITE_TIMEOUT` | no | `10s` | Write timeout |
 | `HTTP_IDLE_TIMEOUT` | no | `120s` | Idle timeout |
-| `HTTP_RATE_LIMIT_PER_SEC` | no | `50` | Per-instance rate limit (req/s) |
-| `HTTP_RATE_LIMIT_BURST` | no | `100` | Rate-limit burst |
+| `HTTP_RATE_LIMIT_REQUESTS` | no | `100` | Per-IP request allowance per window (httprate) |
+| `HTTP_RATE_LIMIT_WINDOW` | no | `1m` | Rate-limit window length |
 | `FIZZBUZZ_MAX_SEQUENCE_LENGTH` | yes | — | Upper bound for the `limit` parameter |
 | `LOG_LEVEL` | yes | — | `debug` / `info` / `warn` / `error` |
 

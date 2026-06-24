@@ -9,6 +9,12 @@ import (
 	"github.com/Pimousse1099/fizz-buzz-api/config"
 )
 
+// GetLogger returns the underlying structured logger for non-request logging
+// (startup/shutdown, the HTTP server error log).
+func (c *Container) GetLogger() *slog.Logger {
+	return c.getHTTPLogger().Logger
+}
+
 // getHTTPLogger returns the memoized httplog logger (slog-backed), tagged with
 // the base context fields. It also drives the request logging middleware.
 func (c *Container) getHTTPLogger() *httplog.Logger {
@@ -35,10 +41,4 @@ func (c *Container) getHTTPLogger() *httplog.Logger {
 	}
 
 	return c.httpLogger
-}
-
-// GetLogger returns the underlying structured logger for non-request logging
-// (startup/shutdown, the HTTP server error log).
-func (c *Container) GetLogger() *slog.Logger {
-	return c.getHTTPLogger().Logger
 }

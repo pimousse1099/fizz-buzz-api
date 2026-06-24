@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/Pimousse1099/fizz-buzz-api/config"
 	"github.com/Pimousse1099/fizz-buzz-api/infrastructure/di"
@@ -17,7 +18,7 @@ func newTestServer(t *testing.T) *httptest.Server {
 
 	cfg := &config.Config{
 		Env:           config.Env{Type: "test"},
-		HTTP:          config.HTTP{Addr: ":0", RateLimitPerSec: 1000, RateLimitBurst: 1000},
+		HTTP:          config.HTTP{Addr: ":0", RateLimitRequests: 1000, RateLimitWindow: time.Minute},
 		FizzBuzz:      config.FizzBuzz{MaxSequenceLength: 10000},
 		Observability: config.Observability{LogLevel: slog.LevelError},
 	}

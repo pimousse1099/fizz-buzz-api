@@ -44,7 +44,7 @@ func main() {
 	httpSrv := container.GetHTTPServer()
 	errChan := make(chan error, 1)
 
-	logger.Info("starting HTTP server", "addr", cfg.HTTP.Addr)
+	logger.Info("starting HTTP server", "http_addr", cfg.HTTP.Addr)
 	httpSrv.Start(errChan)
 
 	signalChan := make(chan os.Signal, 1)

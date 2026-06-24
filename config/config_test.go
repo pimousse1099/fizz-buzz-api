@@ -27,8 +27,12 @@ func TestNew_Defaults(t *testing.T) {
 		t.Errorf("ReadHeaderTimeout = %v, want 2s", cfg.HTTP.ReadHeaderTimeout)
 	}
 
-	if cfg.HTTP.RateLimitBurst != 100 {
-		t.Errorf("RateLimitBurst = %d, want 100", cfg.HTTP.RateLimitBurst)
+	if cfg.HTTP.RateLimitRequests != 100 {
+		t.Errorf("RateLimitRequests = %d, want 100", cfg.HTTP.RateLimitRequests)
+	}
+
+	if cfg.HTTP.RateLimitWindow != time.Minute {
+		t.Errorf("RateLimitWindow = %v, want 1m", cfg.HTTP.RateLimitWindow)
 	}
 
 	if cfg.Observability.LogLevel != slog.LevelInfo {
