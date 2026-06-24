@@ -32,7 +32,7 @@ func TestGetFizzBuzzStats_OK(t *testing.T) {
 	t.Parallel()
 
 	store := statstorer.NewInMemory()
-	store.Record(context.Background(), fizzbuzz.GenerateRequest{Int1: 3, Int2: 5, Limit: 100, Str1: fizz, Str2: buzz})
+	store.RecordFizzBuzzStat(context.Background(), fizzbuzz.GenerateRequest{Int1: 3, Int2: 5, Limit: 100, Str1: fizz, Str2: buzz})
 
 	uc := usecase.NewGetFizzBuzzStats(store)
 	h := handler.GetFizzBuzzStats(uc, slog.New(slog.DiscardHandler))
@@ -52,14 +52,14 @@ func TestGetFizzBuzzStats_OK(t *testing.T) {
 			Str1  string `json:"str1"`
 			Str2  string `json:"str2"`
 		} `json:"request"`
-		Hits int `json:"hits"`
+		TotalHits int `json:"total_hits"`
 	}
 
 	if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
 		t.Fatalf("invalid JSON: %v", err)
 	}
 
-	if body.Hits != 1 || body.Request.Int1 != 3 || body.Request.Str2 != buzz {
+	if body.TotalHits != 1 || body.Request.Int1 != 3 || body.Request.Str2 != buzz {
 		t.Fatalf("unexpected body: %+v", body)
 	}
 }

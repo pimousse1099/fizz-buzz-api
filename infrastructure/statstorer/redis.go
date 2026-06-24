@@ -16,12 +16,12 @@ func NewRedis() *Redis {
 	return &Redis{}
 }
 
-// Record is not implemented yet.
-func (s *Redis) Record(_ context.Context, _ fizzbuzz.GenerateRequest) {
+// RecordFizzBuzzStat is not implemented yet.
+func (s *Redis) RecordFizzBuzzStat(_ context.Context, _ fizzbuzz.GenerateRequest) {
 	panic("implement me: durable stat recording via Redis")
 }
 
-// MostFrequent is not implemented yet.
-func (s *Redis) MostFrequent(_ context.Context) (fizzbuzz.GenerateRequest, int, bool) {
+// GetMostFrequentFizzbuzzRequest is not implemented yet.
+func (s *Redis) GetMostFrequentFizzbuzzRequest(_ context.Context) (*fizzbuzz.GetStatsResponse, error) {
 	panic("implement me: durable stat reading via Redis")
 }

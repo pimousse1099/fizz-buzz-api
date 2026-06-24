@@ -8,6 +8,8 @@ import (
 	"log/slog"
 	"net/http"
 	"time"
+
+	"github.com/Pimousse1099/fizz-buzz-api/presentation/http/reqctx"
 )
 
 const (
@@ -47,8 +49,8 @@ func Recovery(logger *slog.Logger) func(http.Handler) http.Handler {
 	}
 }
 
-// RequestID assigns a request id (honoring an inbound X-Request-ID) and echoes
-// it on the response.
+// RequestID assigns a request id (honoring an inbound X-Request-ID), echoes it
+// on the response, and stores it in the request context for downstream logging.
 func RequestID(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		id := r.Header.Get(requestIDHeader)
@@ -57,7 +59,8 @@ func RequestID(next http.Handler) http.Handler {
 		}
 
 		w.Header().Set(requestIDHeader, id)
-		next.ServeHTTP(w, r)
+
+		next.ServeHTTP(w, r.WithContext(reqctx.WithRequestID(r.Context(), id)))
 	})
 }
 
@@ -75,7 +78,7 @@ func Logging(logger *slog.Logger) func(http.Handler) http.Handler {
 				"path", r.URL.Path,
 				"status", sr.status,
 				"duration_ms", time.Since(start).Milliseconds(),
-				"request_id", w.Header().Get(requestIDHeader),
+				"request_id", reqctx.RequestID(r.Context()),
 			)
 		})
 	}

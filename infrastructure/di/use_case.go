@@ -14,11 +14,11 @@ func (c *Container) getGenerateFizzBuzzUseCase() *usecase.GenerateFizzBuzz {
 	return c.generateFizzBuzzUseCase
 }
 
-// getFizzBuzzStatsUseCase returns the memoized stats use-case.
-func (c *Container) getFizzBuzzStatsUseCase() *usecase.GetFizzBuzzStats {
-	if c.fizzBuzzStatsUseCase == nil {
-		c.fizzBuzzStatsUseCase = usecase.NewGetFizzBuzzStats(c.getStatStore())
+// getGetFizzBuzzStatsUseCase returns the memoized stats use-case.
+func (c *Container) getGetFizzBuzzStatsUseCase() *usecase.GetFizzBuzzStats {
+	if c.getFizzBuzzStatsUseCase == nil {
+		c.getFizzBuzzStatsUseCase = usecase.NewGetFizzBuzzStats(c.getStatStore())
 	}
 
-	return c.fizzBuzzStatsUseCase
+	return c.getFizzBuzzStatsUseCase
 }

@@ -25,7 +25,7 @@ type Container struct {
 	httpServer  *server.Server
 
 	generateFizzBuzzUseCase *usecase.GenerateFizzBuzz
-	fizzBuzzStatsUseCase    *usecase.GetFizzBuzzStats
+	getFizzBuzzStatsUseCase *usecase.GetFizzBuzzStats
 }
 
 // NewContainer builds a container from the base context and configuration.

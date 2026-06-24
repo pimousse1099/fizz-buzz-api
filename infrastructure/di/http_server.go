@@ -48,6 +48,6 @@ func (c *Container) getHTTPHandler() http.Handler {
 func (c *Container) getRouter() http.Handler {
 	return server.NewRouter(
 		handler.GenerateFizzBuzz(c.getGenerateFizzBuzzUseCase(), c.GetLogger()),
-		handler.GetFizzBuzzStats(c.getFizzBuzzStatsUseCase(), c.GetLogger()),
+		handler.GetFizzBuzzStats(c.getGetFizzBuzzStatsUseCase(), c.GetLogger()),
 	)
 }

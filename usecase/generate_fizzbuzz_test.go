@@ -14,7 +14,7 @@ type spyRecorder struct {
 	recorded []fizzbuzz.GenerateRequest
 }
 
-func (s *spyRecorder) Record(_ context.Context, req fizzbuzz.GenerateRequest) {
+func (s *spyRecorder) RecordFizzBuzzStat(_ context.Context, req fizzbuzz.GenerateRequest) {
 	s.recorded = append(s.recorded, req)
 }
 

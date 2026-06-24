@@ -6,12 +6,13 @@ import (
 	"github.com/Pimousse1099/fizz-buzz-api/domain/fizzbuzz"
 )
 
-// StatReader reads the most frequently recorded generation request.
+// StatReader reads the most frequently recorded request as a stats response,
+// or fizzbuzz.ErrNoStatsRecorded when nothing has been recorded yet.
 type StatReader interface {
-	MostFrequent(ctx context.Context) (req fizzbuzz.GenerateRequest, hits int, ok bool)
+	GetMostFrequentFizzbuzzRequest(ctx context.Context) (*fizzbuzz.GetStatsResponse, error)
 }
 
-// GetFizzBuzzStats returns the most frequent request and its hit count.
+// GetFizzBuzzStats is the application entry point for the statistics query.
 type GetFizzBuzzStats struct {
 	reader StatReader
 }
@@ -21,12 +22,8 @@ func NewGetFizzBuzzStats(reader StatReader) *GetFizzBuzzStats {
 	return &GetFizzBuzzStats{reader: reader}
 }
 
-// Execute returns the most frequent request, or ErrNoStatsRecorded if none.
-func (uc *GetFizzBuzzStats) Execute(ctx context.Context, _ fizzbuzz.GetStatsRequest) (fizzbuzz.GetStatsResponse, error) {
-	req, hits, ok := uc.reader.MostFrequent(ctx)
-	if !ok {
-		return fizzbuzz.GetStatsResponse{}, fizzbuzz.ErrNoStatsRecorded
-	}
-
-	return fizzbuzz.GetStatsResponse{Request: req, Hits: hits}, nil
+// Execute returns the most frequent request and its hit count, propagating
+// fizzbuzz.ErrNoStatsRecorded when there is nothing to report.
+func (uc *GetFizzBuzzStats) Execute(ctx context.Context) (*fizzbuzz.GetStatsResponse, error) {
+	return uc.reader.GetMostFrequentFizzbuzzRequest(ctx)
 }

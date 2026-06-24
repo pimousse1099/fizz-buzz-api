@@ -25,8 +25,8 @@ func NewInMemory() *InMemory {
 	return &InMemory{counts: make(map[fizzbuzz.GenerateRequest]int)}
 }
 
-// Record increments the counter for req.
-func (s *InMemory) Record(_ context.Context, req fizzbuzz.GenerateRequest) {
+// RecordFizzBuzzStat increments the counter for req.
+func (s *InMemory) RecordFizzBuzzStat(_ context.Context, req fizzbuzz.GenerateRequest) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -38,15 +38,15 @@ func (s *InMemory) Record(_ context.Context, req fizzbuzz.GenerateRequest) {
 	}
 }
 
-// MostFrequent returns the most frequent request, its hit count, and whether
-// any request has been recorded.
-func (s *InMemory) MostFrequent(_ context.Context) (fizzbuzz.GenerateRequest, int, bool) {
+// GetMostFrequentFizzbuzzRequest returns the most frequent request and its hit
+// count, or fizzbuzz.ErrNoStatsRecorded if nothing has been recorded yet.
+func (s *InMemory) GetMostFrequentFizzbuzzRequest(_ context.Context) (*fizzbuzz.GetStatsResponse, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	if s.topHits == 0 {
-		return fizzbuzz.GenerateRequest{}, 0, false
+		return nil, fizzbuzz.ErrNoStatsRecorded
 	}
 
-	return s.topReq, s.topHits, true
+	return &fizzbuzz.GetStatsResponse{Request: s.topReq, TotalHits: s.topHits}, nil
 }

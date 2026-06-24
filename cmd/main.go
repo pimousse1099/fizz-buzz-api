@@ -44,7 +44,7 @@ func main() {
 	httpSrv := container.GetHTTPServer()
 	errChan := make(chan error, 1)
 
-	logger.Info("starting http server", "addr", cfg.HTTP.Addr)
+	logger.Info("starting HTTP server", "addr", cfg.HTTP.Addr)
 	httpSrv.Start(errChan)
 
 	signalChan := make(chan os.Signal, 1)
@@ -54,15 +54,16 @@ func main() {
 	case sig := <-signalChan:
 		logger.Info("received shutdown signal", "signal", sig.String())
 	case startErr := <-errChan:
-		logger.Error("http server failed", "error", startErr)
+		logger.Error("HTTP server failed", "error", startErr)
 	}
 
-	logger.Info("shutting down http server", "timeout", shutdownTimeout.String())
+	logger.Info("shutting down HTTP server", "http_shutdown_timeout", shutdownTimeout.String())
 
 	shutdownCtx, shutdownCancel := context.WithTimeout(ctx, shutdownTimeout)
 	defer shutdownCancel()
 
-	if stopErr := httpSrv.Stop(shutdownCtx); stopErr != nil {
-		logger.Error("failed to shut down http server gracefully", "error", stopErr)
+	stopErr := httpSrv.Stop(shutdownCtx)
+	if stopErr != nil {
+		logger.Error("failed to shut down HTTP server gracefully", "error", stopErr)
 	}
 }

@@ -2,6 +2,7 @@ package statstorer_test
 
 import (
 	"context"
+	"errors"
 	"sync"
 	"testing"
 
@@ -16,9 +17,9 @@ func req(int1 int) fizzbuzz.GenerateRequest {
 func TestInMemory_Empty(t *testing.T) {
 	t.Parallel()
 
-	_, _, ok := statstorer.NewInMemory().MostFrequent(context.Background())
-	if ok {
-		t.Fatal("expected ok=false on empty store")
+	_, err := statstorer.NewInMemory().GetMostFrequentFizzbuzzRequest(context.Background())
+	if !errors.Is(err, fizzbuzz.ErrNoStatsRecorded) {
+		t.Fatalf("expected ErrNoStatsRecorded on empty store, got %v", err)
 	}
 }
 
@@ -27,14 +28,18 @@ func TestInMemory_MostFrequent(t *testing.T) {
 
 	s := statstorer.NewInMemory()
 	a, b := req(3), req(7)
-	s.Record(context.Background(), a)
-	s.Record(context.Background(), a)
-	s.Record(context.Background(), a)
-	s.Record(context.Background(), b)
+	s.RecordFizzBuzzStat(context.Background(), a)
+	s.RecordFizzBuzzStat(context.Background(), a)
+	s.RecordFizzBuzzStat(context.Background(), a)
+	s.RecordFizzBuzzStat(context.Background(), b)
 
-	got, hits, ok := s.MostFrequent(context.Background())
-	if !ok || got != a || hits != 3 {
-		t.Fatalf("got %+v hits=%d ok=%v, want %+v hits=3", got, hits, ok, a)
+	resp, err := s.GetMostFrequentFizzbuzzRequest(context.Background())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if resp.Request != a || resp.TotalHits != 3 {
+		t.Fatalf("got %+v, want request %+v total hits 3", resp, a)
 	}
 }
 
@@ -43,14 +48,18 @@ func TestInMemory_TieBreakFirstToReachMax(t *testing.T) {
 
 	s := statstorer.NewInMemory()
 	a, b := req(3), req(7)
-	s.Record(context.Background(), a) // a=1
-	s.Record(context.Background(), a) // a=2  -> top a
-	s.Record(context.Background(), b) // b=1
-	s.Record(context.Background(), b) // b=2  -> not strictly greater, top stays a
+	s.RecordFizzBuzzStat(context.Background(), a) // a=1
+	s.RecordFizzBuzzStat(context.Background(), a) // a=2  -> top a
+	s.RecordFizzBuzzStat(context.Background(), b) // b=1
+	s.RecordFizzBuzzStat(context.Background(), b) // b=2  -> not strictly greater, top stays a
 
-	got, hits, _ := s.MostFrequent(context.Background())
-	if got != a || hits != 2 {
-		t.Fatalf("tie must keep first to reach max: got %+v hits=%d, want %+v hits=2", got, hits, a)
+	resp, err := s.GetMostFrequentFizzbuzzRequest(context.Background())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if resp.Request != a || resp.TotalHits != 2 {
+		t.Fatalf("tie must keep first to reach max: got %+v, want request %+v total hits 2", resp, a)
 	}
 }
 
@@ -71,15 +80,19 @@ func TestInMemory_ConcurrentRecord(t *testing.T) {
 			defer wg.Done()
 
 			for range perGoroutine {
-				s.Record(context.Background(), a)
+				s.RecordFizzBuzzStat(context.Background(), a)
 			}
 		}()
 	}
 
 	wg.Wait()
 
-	_, hits, ok := s.MostFrequent(context.Background())
-	if !ok || hits != goroutines*perGoroutine {
-		t.Fatalf("got hits=%d ok=%v, want %d", hits, ok, goroutines*perGoroutine)
+	resp, err := s.GetMostFrequentFizzbuzzRequest(context.Background())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if resp.TotalHits != goroutines*perGoroutine {
+		t.Fatalf("got total hits=%d, want %d", resp.TotalHits, goroutines*perGoroutine)
 	}
 }

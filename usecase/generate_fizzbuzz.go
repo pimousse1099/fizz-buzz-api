@@ -12,7 +12,7 @@ import (
 
 // StatRecorder records a successful generation request for statistics.
 type StatRecorder interface {
-	Record(ctx context.Context, req fizzbuzz.GenerateRequest)
+	RecordFizzBuzzStat(ctx context.Context, req fizzbuzz.GenerateRequest)
 }
 
 // GenerateFizzBuzz validates a request, generates the sequence, and records the
@@ -30,9 +30,10 @@ func NewGenerateFizzBuzz(maxLimit int, recorder StatRecorder) *GenerateFizzBuzz 
 // Execute validates the request, generates the fizz-buzz sequence, and records
 // the request. The generation is the application's business logic and lives
 // here rather than on the domain type.
-func (uc *GenerateFizzBuzz) Execute(ctx context.Context, req fizzbuzz.GenerateRequest) (fizzbuzz.GenerateResponse, error) {
-	if err := req.Validate(uc.maxLimit); err != nil {
-		return fizzbuzz.GenerateResponse{}, err
+func (uc *GenerateFizzBuzz) Execute(ctx context.Context, req fizzbuzz.GenerateRequest) (*fizzbuzz.GenerateResponse, error) {
+	err := req.Validate(uc.maxLimit)
+	if err != nil {
+		return nil, err
 	}
 
 	result := make([]string, 0, req.Limit)
@@ -50,7 +51,7 @@ func (uc *GenerateFizzBuzz) Execute(ctx context.Context, req fizzbuzz.GenerateRe
 		}
 	}
 
-	uc.recorder.Record(ctx, req)
+	uc.recorder.RecordFizzBuzzStat(ctx, req)
 
-	return fizzbuzz.GenerateResponse{Result: result}, nil
+	return &fizzbuzz.GenerateResponse{Result: result}, nil
 }
