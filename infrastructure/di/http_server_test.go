@@ -3,6 +3,7 @@ package di_test
 import (
 	"context"
 	"encoding/json"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -15,15 +16,14 @@ func newTestServer(t *testing.T) *httptest.Server {
 	t.Helper()
 
 	cfg := &config.Config{
-		HTTPAddr:        ":0",
-		MaxLimit:        10000,
-		RateLimitPerSec: 1000,
-		RateLimitBurst:  1000,
-		LogLevel:        "error",
+		Env:           config.Env{Type: "test"},
+		HTTP:          config.HTTP{Addr: ":0", RateLimitPerSec: 1000, RateLimitBurst: 1000},
+		FizzBuzz:      config.FizzBuzz{MaxSequenceLength: 10000},
+		Observability: config.Observability{LogLevel: slog.LevelError},
 	}
 
 	c := di.NewContainer(context.Background(), cfg)
-	ts := httptest.NewServer(c.HTTPHandler())
+	ts := httptest.NewServer(c.GetHTTPServer().Srv.Handler)
 
 	t.Cleanup(ts.Close)
 

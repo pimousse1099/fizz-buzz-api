@@ -32,8 +32,8 @@ multiples of 3 by "fizz", all multiples of 5 by "buzz", and all multiples of 15 
 Requirements: Go 1.26+.
 
 ```sh
-# Run the server (defaults to :8080)
-go run ./cmd
+# Run the server (required env vars must be provided)
+ENV_TYPE=dev HTTP_ADDR=:8080 FIZZBUZZ_MAX_SEQUENCE_LENGTH=10000 LOG_LEVEL=info go run ./cmd
 
 # Generate
 curl 'http://localhost:8080/fizzbuzz?int1=3&int2=5&limit=15&str1=fizz&str2=buzz'
@@ -45,9 +45,20 @@ curl 'http://localhost:8080/fizzbuzz/stats'
 curl http://localhost:8080/healthz
 ```
 
-Configuration (environment variables): `HTTP_ADDR` (`:8080`), `MAX_LIMIT` (`10000`),
-`RATE_LIMIT_PER_SEC` (`50`), `RATE_LIMIT_BURST` (`100`), `READ_HEADER_TIMEOUT` (`2s`),
-`WRITE_TIMEOUT` (`10s`), `IDLE_TIMEOUT` (`120s`), `LOG_LEVEL` (`info`).
+Configuration (environment variables), grouped by concern:
+
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| `ENV_TYPE` | yes | — | Deployment environment (e.g. `production`, `dev`) |
+| `ENV_NAME` | no | — | Free-form instance label |
+| `HTTP_ADDR` | yes | — | Listen address, e.g. `:8080` |
+| `HTTP_READ_HEADER_TIMEOUT` | no | `2s` | Read-header timeout |
+| `HTTP_WRITE_TIMEOUT` | no | `10s` | Write timeout |
+| `HTTP_IDLE_TIMEOUT` | no | `120s` | Idle timeout |
+| `HTTP_RATE_LIMIT_PER_SEC` | no | `50` | Per-instance rate limit (req/s) |
+| `HTTP_RATE_LIMIT_BURST` | no | `100` | Rate-limit burst |
+| `FIZZBUZZ_MAX_SEQUENCE_LENGTH` | yes | — | Upper bound for the `limit` parameter |
+| `LOG_LEVEL` | yes | — | `debug` / `info` / `warn` / `error` |
 
 Development:
 
