@@ -5,6 +5,7 @@ package usecase
 
 import (
 	"context"
+	"log/slog"
 	"strconv"
 
 	ctxlog "github.com/go-chi/httplog/v2"
@@ -33,6 +34,8 @@ func NewGenerateFizzBuzz(maxLimit int, recorder StatRecorder) *GenerateFizzBuzz 
 // the request. The generation is the application's business logic and lives
 // here rather than on the domain type.
 func (uc *GenerateFizzBuzz) Execute(ctx context.Context, req fizzbuzz.GenerateRequest) (*fizzbuzz.GenerateResponse, error) {
+	ctxlog.LogEntrySetField(ctx, "use_case", slog.StringValue("generate_fizzbuzz"))
+
 	err := req.Validate(uc.maxLimit)
 	if err != nil {
 		return nil, err // returns an ErrFailedToValidateGenerateRequest error.

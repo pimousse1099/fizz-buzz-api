@@ -48,7 +48,11 @@ func (c *Container) getHTTPHandler() http.Handler {
 	router.Use(middleware.Recoverer)
 	router.Use(httprate.LimitByIP(c.config.HTTP.RateLimitRequests, c.config.HTTP.RateLimitWindow))
 
+	// Liveness: the process is up. Readiness: ready to serve traffic — there are
+	// no mandatory external dependencies yet, so it always reports ready; a
+	// durable stat store / shared rate-limiter would be checked here.
 	router.Get("/healthz", func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) })
+	router.Get("/readyz", func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) })
 	router.Get(httphandler.GenerateFizzBuzzRoute, httphandler.GenerateFizzBuzz(c.getGenerateFizzBuzzUseCase()))
 	router.Get(httphandler.GetFizzBuzzStatsRoute, httphandler.GetFizzBuzzStats(c.getGetFizzBuzzStatsUseCase()))
 
