@@ -13,23 +13,19 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.41.0"
+
+	"github.com/Pimousse1099/fizz-buzz-api/config"
 )
 
-// Config configures the OTLP/HTTP exporter and the sampler.
-type Config struct {
-	Enabled        bool
-	SampleRatio    float64
-	OTLPEndpoint   string
-	ServiceName    string
-	ServiceVersion string
-	Environment    string
-}
-
-// Init configures the global tracer provider and returns a shutdown func that
-// flushes and stops it. When cfg.Enabled is false it is a no-op: the global
-// tracer stays the default no-op, so the app runs with no collector and zero
-// tracing overhead.
-func Init(ctx context.Context, cfg *Config) (func(context.Context) error, error) {
+// Init configures the global tracer provider from the tracing config and the
+// service identity, returning a shutdown func that flushes and stops it. When
+// tracing is disabled it is a no-op: the global tracer stays the default no-op,
+// so the app runs with no collector and zero tracing overhead.
+func Init(
+	ctx context.Context,
+	cfg config.Tracing,
+	serviceName, serviceVersion, environment string,
+) (func(context.Context) error, error) {
 	noop := func(context.Context) error { return nil }
 	if !cfg.Enabled {
 		return noop, nil
@@ -46,9 +42,9 @@ func Init(ctx context.Context, cfg *Config) (func(context.Context) error, error)
 	}
 
 	res := resource.NewSchemaless(
-		semconv.ServiceName(cfg.ServiceName),
-		semconv.ServiceVersion(cfg.ServiceVersion),
-		semconv.DeploymentEnvironmentNameKey.String(cfg.Environment),
+		semconv.ServiceName(serviceName),
+		semconv.ServiceVersion(serviceVersion),
+		semconv.DeploymentEnvironmentNameKey.String(environment),
 	)
 
 	provider := sdktrace.NewTracerProvider(
