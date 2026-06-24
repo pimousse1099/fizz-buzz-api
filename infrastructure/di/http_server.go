@@ -10,7 +10,9 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	ctxlog "github.com/go-chi/httplog/v2"
 	"github.com/go-chi/httprate"
+	"github.com/riandyrn/otelchi"
 
+	"github.com/Pimousse1099/fizz-buzz-api/config"
 	"github.com/Pimousse1099/fizz-buzz-api/presentation/http/handler"
 	"github.com/Pimousse1099/fizz-buzz-api/presentation/http/server"
 )
@@ -43,6 +45,9 @@ func (c *Container) GetHTTPServer() *httpserver.Server {
 func (c *Container) getHTTPHandler() http.Handler {
 	router := chi.NewRouter()
 
+	// Tracing is outermost so the server span covers the whole request. It is a
+	// no-op unless a tracer provider is configured (TRACING_ENABLED).
+	router.Use(otelchi.Middleware(config.AppName, otelchi.WithChiRoutes(router)))
 	router.Use(middleware.RequestID)
 	router.Use(ctxlog.RequestLogger(c.getHTTPLogger()))
 	router.Use(middleware.Recoverer)

@@ -5,6 +5,7 @@ import (
 	"log/slog"
 
 	ctxlog "github.com/go-chi/httplog/v2"
+	"go.opentelemetry.io/otel"
 
 	"github.com/Pimousse1099/fizz-buzz-api/domain/fizzbuzz"
 )
@@ -28,6 +29,9 @@ func NewGetFizzBuzzStats(reader StatReader) *GetFizzBuzzStats {
 // Execute returns the most frequent request and its hit count, propagating
 // fizzbuzz.ErrNoStatsRecorded when there is nothing to report.
 func (uc *GetFizzBuzzStats) Execute(ctx context.Context) (*fizzbuzz.GetStatsResponse, error) {
+	ctx, span := otel.Tracer(tracerName).Start(ctx, "usecase.get_fizzbuzz_stats")
+	defer span.End()
+
 	ctxlog.LogEntrySetField(ctx, "use_case", slog.StringValue("get_fizzbuzz_stats"))
 
 	return uc.reader.GetMostFrequentFizzbuzzRequest(ctx)

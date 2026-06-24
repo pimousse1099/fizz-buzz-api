@@ -12,6 +12,7 @@ import (
 
 	"github.com/Pimousse1099/fizz-buzz-api/config"
 	"github.com/Pimousse1099/fizz-buzz-api/infrastructure/di"
+	"github.com/Pimousse1099/fizz-buzz-api/infrastructure/tracing"
 )
 
 const shutdownTimeout = 10 * time.Second
@@ -40,6 +41,29 @@ func main() {
 
 	container := di.NewContainer(ctx, cfg)
 	logger := container.GetLogger()
+
+	// Tracing: no-op (and no collector needed) unless TRACING_ENABLED=true.
+	shutdownTracing, err := tracing.Init(ctx, &tracing.Config{
+		Enabled:        cfg.Tracing.Enabled,
+		SampleRatio:    cfg.Tracing.SampleRatio,
+		OTLPEndpoint:   cfg.Tracing.OTLPEndpoint,
+		ServiceName:    config.AppName,
+		ServiceVersion: config.AppVersion,
+		Environment:    cfg.Env.Type,
+	})
+	if err != nil {
+		logger.Error("failed to initialize tracing", "error", err)
+	}
+
+	defer func() {
+		flushCtx, cancelFlush := context.WithTimeout(context.Background(), shutdownTimeout)
+		defer cancelFlush()
+
+		flushErr := shutdownTracing(flushCtx)
+		if flushErr != nil {
+			logger.Error("failed to shut down tracing", "error", flushErr)
+		}
+	}()
 
 	httpSrv := container.GetHTTPServer()
 	errChan := make(chan error, 1)

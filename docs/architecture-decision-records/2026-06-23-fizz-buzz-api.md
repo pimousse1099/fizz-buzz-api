@@ -220,9 +220,18 @@ builds one memoized logger tagged with base context fields (reezoback naming):
 **Rationale:** Structured, zero-dependency, modern (Go 1.21+), consistent with the `pure-go` intent.
 The base fields make every line attributable to an app/version/environment/host.
 
-> **To refine.** Logging, observability (metrics/tracing), and the precise middleware stack
-> (recovery, request-id, logging, rate-limit ordering) are intentionally left open at this stage and
-> will be decided in a follow-up discussion. This section will be updated then.
+**Observability — metrics delegated to infra (12-factor):**
+- **Golden signals** (latency p50/p95/p99, throughput, error rate by route/status) are delegated to
+  the **infrastructure layer**: service mesh sidecar (Envoy/Istio/Linkerd), ingress / API gateway,
+  cloud load balancer, or eBPF auto-instrumentation (Grafana Beyla, Pixie). No application metrics
+  code — consistent across all services, same edge-first rationale as §2.11 (rate limiting).
+- Per the **12-factor** "logs as event streams" principle, the app only writes **structured JSON logs
+  to stdout** (incl. per-request duration via httplog) and leaves shipping/aggregation to the
+  platform. It does not manage log files, rotation, or a metrics endpoint.
+- Application-level instrumentation is reserved for what infra **cannot** synthesize: **distributed
+  tracing** (intra-request breakdown — handler vs use-case vs store vs serialization), done with
+  OpenTelemetry (see §2.14), and any future **business** metrics. HTTP-perf metrics are not
+  instrumented in-app.
 
 ### 2.11 Rate limiting — infra/edge is authoritative; app keeps a local guard
 
@@ -292,6 +301,29 @@ the request. This matters most at the seams the Redis placeholders represent: a 
 or a distributed rate limiter makes network calls that must honor the request's context. In-memory
 implementations accept `ctx` to satisfy the interface contract even though they ignore it, so the
 network-bound implementations drop in without signature changes.
+
+### 2.14 Tracing — OpenTelemetry (in-app)
+
+**Decision:** Distributed tracing is the one signal the infra layer cannot synthesize (intra-request
+breakdown: server → use-case → store → serialization), so it is instrumented in-app with
+**OpenTelemetry**, exported over **OTLP/HTTP**:
+- **Vanilla OTel SDK** (`go.opentelemetry.io/otel` + `/sdk` + `otlptracehttp`), not a vendor distro:
+  vendor-neutral, OTLP works with any backend (Tempo/Jaeger/Datadog/Splunk…). (reezoback uses the
+  Splunk distro pinned to OTel v1.28; we use vanilla at v1.44.)
+- **`github.com/riandyrn/otelchi`** middleware creates the server span (named by chi route pattern),
+  added outermost so it covers the whole request. It is a no-op when no provider is configured.
+- **Use-case spans** (`otel.Tracer(...).Start(ctx, "usecase.generate_fizzbuzz")`) give the
+  intra-request breakdown. The OTel trace **API** is a cross-cutting instrumentation API that is a
+  no-op without a provider, so importing it in the use-case layer is legitimate (unlike an HTTP
+  logging lib).
+- **W3C** propagation (`tracecontext` + `baggage`). Sampler: parent-based ratio.
+- **Disabled by default** (`TRACING_ENABLED=false`): the global tracer stays the no-op, so the app
+  runs with **no collector and zero overhead**. Config: `TRACING_ENABLED`, `TRACING_SAMPLE_RATIO`,
+  `TRACING_OTLP_ENDPOINT` (or the standard `OTEL_EXPORTER_OTLP_ENDPOINT`).
+- The provider is **flushed and stopped** on graceful shutdown (`cmd/main.go`).
+
+**Rationale:** Metrics/golden-signals are delegated to infra (§2.10); tracing is the in-app
+complement for what infra can't see. Vendor-neutral OTLP avoids lock-in and stays current.
 
 ## 3. Dependencies
 

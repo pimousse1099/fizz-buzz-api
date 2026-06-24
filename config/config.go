@@ -26,6 +26,7 @@ type Config struct {
 	HTTP          HTTP          `env:",prefix=HTTP_"`
 	FizzBuzz      FizzBuzz      `env:",prefix=FIZZBUZZ_"`
 	Observability Observability `env:",prefix=LOG_"`
+	Tracing       Tracing       `env:",prefix=TRACING_"`
 }
 
 // Env identifies the deployment environment, used to tag logs/observability.
@@ -56,6 +57,17 @@ type Observability struct {
 	// LogLevel is parsed directly into a slog.Level by go-envconfig via the
 	// type's encoding.TextUnmarshaler (accepts debug/info/warn/error).
 	LogLevel slog.Level `env:"LEVEL,required"` // LOG_LEVEL
+}
+
+// Tracing holds OpenTelemetry tracing configuration. Disabled by default so the
+// app runs with no collector; HTTP-perf metrics are delegated to infra (§2.10),
+// only tracing is instrumented in-app.
+type Tracing struct {
+	Enabled     bool    `env:"ENABLED,default=false"`  // TRACING_ENABLED
+	SampleRatio float64 `env:"SAMPLE_RATIO,default=1"` // TRACING_SAMPLE_RATIO (0..1)
+	// OTLPEndpoint is the OTLP/HTTP collector host:port; empty falls back to the
+	// standard OTEL_EXPORTER_OTLP_ENDPOINT env var / SDK default.
+	OTLPEndpoint string `env:"OTLP_ENDPOINT"` // TRACING_OTLP_ENDPOINT
 }
 
 // New loads configuration from the environment. Required variables without a

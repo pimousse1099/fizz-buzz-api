@@ -9,9 +9,13 @@ import (
 	"strconv"
 
 	ctxlog "github.com/go-chi/httplog/v2"
+	"go.opentelemetry.io/otel"
 
 	"github.com/Pimousse1099/fizz-buzz-api/domain/fizzbuzz"
 )
+
+// tracerName is the OpenTelemetry instrumentation scope for the use-case layer.
+const tracerName = "github.com/Pimousse1099/fizz-buzz-api/usecase"
 
 // StatRecorder records a successful generation request for statistics.
 type StatRecorder interface {
@@ -34,10 +38,15 @@ func NewGenerateFizzBuzz(maxLimit int, recorder StatRecorder) *GenerateFizzBuzz 
 // the request. The generation is the application's business logic and lives
 // here rather than on the domain type.
 func (uc *GenerateFizzBuzz) Execute(ctx context.Context, req fizzbuzz.GenerateRequest) (*fizzbuzz.GenerateResponse, error) {
+	ctx, span := otel.Tracer(tracerName).Start(ctx, "usecase.generate_fizzbuzz")
+	defer span.End()
+
 	ctxlog.LogEntrySetField(ctx, "use_case", slog.StringValue("generate_fizzbuzz"))
 
 	err := req.Validate(uc.maxLimit)
 	if err != nil {
+		span.RecordError(err)
+
 		return nil, err // returns an ErrFailedToValidateGenerateRequest error.
 	}
 

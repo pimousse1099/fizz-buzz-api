@@ -59,6 +59,9 @@ Configuration (environment variables), grouped by concern:
 | `HTTP_RATE_LIMIT_WINDOW` | no | `1m` | Rate-limit window length |
 | `FIZZBUZZ_MAX_SEQUENCE_LENGTH` | yes | — | Upper bound for the `limit` parameter |
 | `LOG_LEVEL` | yes | — | `debug` / `info` / `warn` / `error` |
+| `TRACING_ENABLED` | no | `false` | Enable OpenTelemetry tracing (OTLP/HTTP) |
+| `TRACING_SAMPLE_RATIO` | no | `1` | Trace sampling ratio (0..1) |
+| `TRACING_OTLP_ENDPOINT` | no | — | OTLP/HTTP collector `host:port` (else `OTEL_EXPORTER_OTLP_ENDPOINT`) |
 
 Development:
 
