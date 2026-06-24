@@ -7,7 +7,7 @@ package di
 import (
 	"context"
 
-	"github.com/go-chi/httplog/v2"
+	ctxlog "github.com/go-chi/httplog/v2"
 
 	"github.com/Pimousse1099/fizz-buzz-api/config"
 	"github.com/Pimousse1099/fizz-buzz-api/infrastructure/statstorer"
@@ -20,7 +20,7 @@ type Container struct {
 	ctx    context.Context //nolint:containedctx // base context for the server lifecycle
 	config *config.Config
 
-	httpLogger *httplog.Logger
+	httpLogger *ctxlog.Logger
 	statStore  *statstorer.InMemory
 	httpServer *httpserver.Server
 

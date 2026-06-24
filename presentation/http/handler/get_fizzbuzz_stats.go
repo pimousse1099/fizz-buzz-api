@@ -5,7 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/go-chi/httplog/v2"
+	ctxlog "github.com/go-chi/httplog/v2"
 
 	"github.com/Pimousse1099/fizz-buzz-api/domain/fizzbuzz"
 	"github.com/Pimousse1099/fizz-buzz-api/usecase"
@@ -20,8 +20,8 @@ func GetFizzBuzzStats(uc *usecase.GetFizzBuzzStats) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Enrich the request-scoped log entry so downstream logs sharing this
 		// context also carry the http_handler field.
-		httplog.LogEntrySetField(r.Context(), "http_handler", slog.StringValue("get_fizzbuzz_stats"))
-		l := httplog.LogEntry(r.Context())
+		ctxlog.LogEntrySetField(r.Context(), "http_handler", slog.StringValue("get_fizzbuzz_stats"))
+		l := ctxlog.LogEntry(r.Context())
 
 		resp, err := uc.Execute(r.Context())
 		if err != nil {

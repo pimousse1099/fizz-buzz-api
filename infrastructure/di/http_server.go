@@ -8,7 +8,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/go-chi/httplog/v2"
+	ctxlog "github.com/go-chi/httplog/v2"
 	"github.com/go-chi/httprate"
 
 	"github.com/Pimousse1099/fizz-buzz-api/presentation/http/handler"
@@ -44,7 +44,7 @@ func (c *Container) getHTTPHandler() http.Handler {
 	router := chi.NewRouter()
 
 	router.Use(middleware.RequestID)
-	router.Use(httplog.RequestLogger(c.getHTTPLogger()))
+	router.Use(ctxlog.RequestLogger(c.getHTTPLogger()))
 	router.Use(middleware.Recoverer)
 	router.Use(httprate.LimitByIP(c.config.HTTP.RateLimitRequests, c.config.HTTP.RateLimitWindow))
 

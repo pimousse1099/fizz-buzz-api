@@ -4,7 +4,7 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/go-chi/httplog/v2"
+	ctxlog "github.com/go-chi/httplog/v2"
 
 	"github.com/Pimousse1099/fizz-buzz-api/config"
 )
@@ -17,7 +17,7 @@ func (c *Container) GetLogger() *slog.Logger {
 
 // getHTTPLogger returns the memoized httplog logger (slog-backed), tagged with
 // the base context fields. It also drives the request logging middleware.
-func (c *Container) getHTTPLogger() *httplog.Logger {
+func (c *Container) getHTTPLogger() *ctxlog.Logger {
 	if c.httpLogger == nil {
 		tags := map[string]string{
 			"application_name":    config.AppName,
@@ -34,7 +34,7 @@ func (c *Container) getHTTPLogger() *httplog.Logger {
 			tags["host_name"] = hostname
 		}
 
-		c.httpLogger = httplog.NewLogger(config.AppName, httplog.Options{
+		c.httpLogger = ctxlog.NewLogger(config.AppName, ctxlog.Options{
 			JSON:     true,
 			LogLevel: c.config.Observability.LogLevel,
 			Tags:     tags,

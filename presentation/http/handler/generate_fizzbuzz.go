@@ -8,7 +8,7 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/go-chi/httplog/v2"
+	ctxlog "github.com/go-chi/httplog/v2"
 
 	"github.com/Pimousse1099/fizz-buzz-api/domain/fizzbuzz"
 	"github.com/Pimousse1099/fizz-buzz-api/usecase"
@@ -39,8 +39,8 @@ func GenerateFizzBuzz(uc *usecase.GenerateFizzBuzz) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Enrich the request-scoped log entry so downstream logs (use-case, etc.)
 		// sharing this context also carry the http_handler field.
-		httplog.LogEntrySetField(r.Context(), "http_handler", slog.StringValue("generate_fizzbuzz"))
-		l := httplog.LogEntry(r.Context())
+		ctxlog.LogEntrySetField(r.Context(), "http_handler", slog.StringValue("generate_fizzbuzz"))
+		l := ctxlog.LogEntry(r.Context())
 
 		req, err := parseGenerateRequest(r)
 		if err != nil {

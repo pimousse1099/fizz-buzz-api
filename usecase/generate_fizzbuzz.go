@@ -7,7 +7,7 @@ import (
 	"context"
 	"strconv"
 
-	"github.com/go-chi/httplog/v2"
+	ctxlog "github.com/go-chi/httplog/v2"
 
 	"github.com/Pimousse1099/fizz-buzz-api/domain/fizzbuzz"
 )
@@ -58,7 +58,7 @@ func (uc *GenerateFizzBuzz) Execute(ctx context.Context, req fizzbuzz.GenerateRe
 		// Stats recording is best-effort: a failure must not fail an otherwise
 		// successful generation, so we log a warning (with the request-scoped
 		// fields) and still return the result.
-		httplog.LogEntry(ctx).Warn("failed to record fizzbuzz stat", "error", err)
+		ctxlog.LogEntry(ctx).Warn("failed to record fizzbuzz stat", "error", err)
 	}
 
 	return &fizzbuzz.GenerateResponse{Result: result}, nil
