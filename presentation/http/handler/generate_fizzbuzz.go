@@ -16,9 +16,23 @@ import (
 // GenerateFizzBuzzRoute is the route path for the generate endpoint.
 const GenerateFizzBuzzRoute = "/fizzbuzz"
 
-var errInvalidQueryParam = errors.New("invalid or missing query parameter")
+// Query parameter names for the generate endpoint. All are required.
+const (
+	queryParamInt1  = "int1"
+	queryParamInt2  = "int2"
+	queryParamLimit = "limit"
+	queryParamStr1  = "str1"
+	queryParamStr2  = "str2"
+)
 
-// GenerateFizzBuzz parses the query, runs the use-case and writes the result.
+// errInvalidQueryParam is wrapped by every query-parsing failure so the handler
+// can classify it as a client (400) error via errors.Is.
+var errInvalidQueryParam = errors.New("failed to validate HTTP query parameter")
+
+// GenerateFizzBuzz handles GET /fizzbuzz. All query params are required:
+//   - int1, int2, limit : integers (int1/int2 must be positive, limit is bounded by config)
+//   - str1, str2        : non-empty strings
+//
 // Parsing and validation failures map to 400; unexpected failures to 500.
 func GenerateFizzBuzz(uc *usecase.GenerateFizzBuzz) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -26,23 +40,14 @@ func GenerateFizzBuzz(uc *usecase.GenerateFizzBuzz) http.HandlerFunc {
 
 		req, err := parseGenerateRequest(r)
 		if err != nil {
-			l.Warn("failed to parse HTTP request", "error", err)
-			writeError(w, http.StatusBadRequest, err.Error())
+			writeServiceError(w, l, err)
 
 			return
 		}
 
 		resp, err := uc.Execute(r.Context(), *req)
 		if err != nil {
-			if errors.Is(err, fizzbuzz.ErrFailedToValidateGenerateRequest) {
-				l.Warn("rejected invalid request", "error", err)
-				writeError(w, http.StatusBadRequest, err.Error())
-
-				return
-			}
-
-			l.Error("failed to execute use-case", "error", err)
-			writeError(w, http.StatusInternalServerError, "internal server error")
+			writeServiceError(w, l, err)
 
 			return
 		}
@@ -57,27 +62,27 @@ func GenerateFizzBuzz(uc *usecase.GenerateFizzBuzz) http.HandlerFunc {
 func parseGenerateRequest(r *http.Request) (*fizzbuzz.GenerateRequest, error) {
 	q := r.URL.Query()
 
-	int1, err := parseIntParam(q, "int1")
+	int1, err := parseIntParam(q, queryParamInt1)
 	if err != nil {
 		return nil, err
 	}
 
-	int2, err := parseIntParam(q, "int2")
+	int2, err := parseIntParam(q, queryParamInt2)
 	if err != nil {
 		return nil, err
 	}
 
-	limit, err := parseIntParam(q, "limit")
+	limit, err := parseIntParam(q, queryParamLimit)
 	if err != nil {
 		return nil, err
 	}
 
-	str1, err := parseStringParam(q, "str1")
+	str1, err := parseStringParam(q, queryParamStr1)
 	if err != nil {
 		return nil, err
 	}
 
-	str2, err := parseStringParam(q, "str2")
+	str2, err := parseStringParam(q, queryParamStr2)
 	if err != nil {
 		return nil, err
 	}

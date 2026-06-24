@@ -1,12 +1,10 @@
 package httphandler
 
 import (
-	"errors"
 	"net/http"
 
 	"github.com/go-chi/httplog/v2"
 
-	"github.com/Pimousse1099/fizz-buzz-api/domain/fizzbuzz"
 	"github.com/Pimousse1099/fizz-buzz-api/usecase"
 )
 
@@ -21,15 +19,7 @@ func GetFizzBuzzStats(uc *usecase.GetFizzBuzzStats) http.HandlerFunc {
 
 		resp, err := uc.Execute(r.Context())
 		if err != nil {
-			if errors.Is(err, fizzbuzz.ErrNoStatsRecorded) {
-				l.Info("no statistics recorded yet")
-				writeError(w, http.StatusNotFound, "no statistics recorded yet")
-
-				return
-			}
-
-			l.Error("failed to execute use-case", "error", err)
-			writeError(w, http.StatusInternalServerError, "internal server error")
+			writeServiceError(w, l, err)
 
 			return
 		}
