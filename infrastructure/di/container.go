@@ -1,13 +1,14 @@
 // Package di is the inversion-of-control container: it constructs and memoizes
 // the application's dependencies. Getters are lazy (built on first use) and live
-// in concern-specific files (logger.go, stat_store.go, rate_limiter.go,
-// use_case.go, http_server.go).
+// in concern-specific files (logger.go, stat_store.go, use_case.go,
+// http_server.go, tracing.go).
 package di
 
 import (
 	"context"
 
 	ctxlog "github.com/go-chi/httplog/v2"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 
 	"github.com/Pimousse1099/fizz-buzz-api/config"
 	"github.com/Pimousse1099/fizz-buzz-api/infrastructure/statstorer"
@@ -20,9 +21,10 @@ type Container struct {
 	ctx    context.Context //nolint:containedctx // base context for the server lifecycle
 	config *config.Config
 
-	httpLogger *ctxlog.Logger
-	statStore  *statstorer.InMemory
-	httpServer *httpserver.Server
+	httpLogger     *ctxlog.Logger
+	statStore      *statstorer.InMemory
+	httpServer     *httpserver.Server
+	tracerProvider *sdktrace.TracerProvider
 
 	generateFizzBuzzUseCase *usecase.GenerateFizzBuzz
 	getFizzBuzzStatsUseCase *usecase.GetFizzBuzzStats

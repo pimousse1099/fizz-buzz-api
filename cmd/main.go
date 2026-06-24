@@ -46,16 +46,20 @@ func main() {
 	// =================================================================================================================
 
 	// Tracing: no-op (and no collector needed) unless TRACING_ENABLED=true.
-	shutdownTracing, err := container.GetTracingShutdown(ctx)
+	tracerProvider, err := container.GetTracerProvider(ctx)
 	if err != nil {
 		logger.Error("failed to initialize tracing", "error", err)
 	}
 
 	defer func() {
+		if tracerProvider == nil {
+			return
+		}
+
 		flushCtx, cancelFlush := context.WithTimeout(context.Background(), shutdownTimeout)
 		defer cancelFlush()
 
-		flushErr := shutdownTracing(flushCtx)
+		flushErr := tracerProvider.Shutdown(flushCtx)
 		if flushErr != nil {
 			logger.Error("failed to shut down tracing", "error", flushErr)
 		}
