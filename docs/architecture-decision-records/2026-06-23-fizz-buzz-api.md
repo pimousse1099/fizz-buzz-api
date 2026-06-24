@@ -189,18 +189,36 @@ extensibility expected of production code without pulling in real infrastructure
 
 **Decision:**
 - Configuration loaded from environment variables via `sethvargo/go-envconfig` (no stdlib
-  equivalent for struct↔env mapping). Config covers: listen address, `MaxLimit`, rate-limit
-  parameters, and HTTP server timeouts. `AppName`/`AppVersion` as constants/build-time vars.
-- `cmd/main.go`: load config → build DI container → `httpSrv.Start(stopChan)` → intercept
-  `SIGINT`/`SIGTERM` → `Stop(ctx, cancel)` for graceful shutdown.
-- `http.Server` configured with `ReadHeaderTimeout`, `WriteTimeout`, `IdleTimeout`,
-  `MaxHeaderBytes`.
+  equivalent for struct↔env mapping), **grouped by concern** into sub-structs with prefixes:
+  `Env` (`ENV_`), `HTTP` (`HTTP_`), `FizzBuzz` (`FIZZBUZZ_`), `Observability` (`LOG_`).
+  `AppName`/`AppVersion` as constant/build-time var.
+- **Required (no default), to force explicit deployment values:** `ENV_TYPE`, `HTTP_ADDR`,
+  `FIZZBUZZ_MAX_SEQUENCE_LENGTH` (the bound on `limit`, renamed from `MaxLimit` for clarity),
+  `LOG_LEVEL`. Operational knobs keep sensible defaults (timeouts, rate-limit).
+- `LOG_LEVEL` is decoded straight into a `slog.Level` by go-envconfig via the type's
+  `encoding.TextUnmarshaler` — parsing lives in config, not in the logger.
+- **Lifecycle (`cmd/main.go`):** log a startup banner (slog) → load config (a failure is logged via
+  the default slog logger, then `os.Exit(1)`) → create a **single base context**
+  (`context.WithCancel(Background)`, independent of the OS signal) → build the DI container with it →
+  `httpSrv.Start(errChan)` → wait on a `SIGINT`/`SIGTERM` channel or a server error → graceful
+  `Stop(ctx)` using a timeout **derived from the same base context**. Lifecycle logs (starting on
+  addr / signal received / shutting down) live in `main`; `server.go` stays purely mechanical.
+- `http.Server` configured with `ReadHeaderTimeout`, `WriteTimeout`, `IdleTimeout`, `MaxHeaderBytes`,
+  plus a `BaseContext` returning the container's base context (so connections derive from it) and an
+  `ErrorLog` routed through slog at error level (`slog.NewLogLogger`).
+- **Error message convention:** operational/wrapped errors read `failed to …` (e.g. `failed to
+  process config`, `failed to shut down http server`); user-facing validation messages stay
+  field-specific (`int1 must be a positive integer`).
 
 ### 2.10 Logging — stdlib `log/slog`
 
-**Decision:** Use the standard library `log/slog` (JSON handler) rather than `logrus`.
+**Decision:** Use the standard library `log/slog` (JSON handler) rather than `logrus`. The container
+builds one memoized logger tagged with base context fields (reezoback naming):
+`application_name`, `application_version`, `environment_type`, `environment_name` (when set), and
+`host_name` (from `os.Hostname`). The log level comes from config as a `slog.Level` (see §2.9).
 
 **Rationale:** Structured, zero-dependency, modern (Go 1.21+), consistent with the `pure-go` intent.
+The base fields make every line attributable to an app/version/environment/host.
 
 > **To refine.** Logging, observability (metrics/tracing), and the precise middleware stack
 > (recovery, request-id, logging, rate-limit ordering) are intentionally left open at this stage and
