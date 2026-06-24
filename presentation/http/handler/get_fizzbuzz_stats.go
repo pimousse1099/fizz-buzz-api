@@ -2,6 +2,7 @@ package httphandler
 
 import (
 	"errors"
+	"log/slog"
 	"net/http"
 
 	"github.com/go-chi/httplog/v2"
@@ -17,7 +18,10 @@ const GetFizzBuzzStatsRoute = "/fizzbuzz/stats"
 // The domain GetStatsResponse is serialized directly (it carries the JSON tags).
 func GetFizzBuzzStats(uc *usecase.GetFizzBuzzStats) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		l := httplog.LogEntry(r.Context()).With("http_handler", "get_fizzbuzz_stats")
+		// Enrich the request-scoped log entry so downstream logs sharing this
+		// context also carry the http_handler field.
+		httplog.LogEntrySetField(r.Context(), "http_handler", slog.StringValue("get_fizzbuzz_stats"))
+		l := httplog.LogEntry(r.Context())
 
 		resp, err := uc.Execute(r.Context())
 		if err != nil {

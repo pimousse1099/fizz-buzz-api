@@ -3,6 +3,7 @@ package httphandler
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -36,7 +37,10 @@ var errInvalidQueryParam = errors.New("failed to validate HTTP query parameter")
 // Parsing and validation failures map to 400; unexpected failures to 500.
 func GenerateFizzBuzz(uc *usecase.GenerateFizzBuzz) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		l := httplog.LogEntry(r.Context()).With("http_handler", "generate_fizzbuzz")
+		// Enrich the request-scoped log entry so downstream logs (use-case, etc.)
+		// sharing this context also carry the http_handler field.
+		httplog.LogEntrySetField(r.Context(), "http_handler", slog.StringValue("generate_fizzbuzz"))
+		l := httplog.LogEntry(r.Context())
 
 		req, err := parseGenerateRequest(r)
 		if err != nil {

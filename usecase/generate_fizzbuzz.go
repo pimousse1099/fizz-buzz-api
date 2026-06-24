@@ -33,7 +33,7 @@ func NewGenerateFizzBuzz(maxLimit int, recorder StatRecorder) *GenerateFizzBuzz 
 func (uc *GenerateFizzBuzz) Execute(ctx context.Context, req fizzbuzz.GenerateRequest) (*fizzbuzz.GenerateResponse, error) {
 	err := req.Validate(uc.maxLimit)
 	if err != nil {
-		return nil, err
+		return nil, err // returns an ErrFailedToValidateGenerateRequest error.
 	}
 
 	result := make([]string, 0, req.Limit)
