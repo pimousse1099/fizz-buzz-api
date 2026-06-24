@@ -31,7 +31,7 @@ func TestGetFizzBuzzStats_OK(t *testing.T) {
 	t.Parallel()
 
 	store := statstorer.NewInMemory()
-	store.RecordFizzBuzzStat(context.Background(), fizzbuzz.GenerateRequest{Int1: 3, Int2: 5, Limit: 100, Str1: fizz, Str2: buzz})
+	_ = store.RecordFizzBuzzStat(context.Background(), fizzbuzz.GenerateRequest{Int1: 3, Int2: 5, Limit: 100, Str1: fizz, Str2: buzz})
 
 	uc := usecase.NewGetFizzBuzzStats(store)
 	h := httphandler.GetFizzBuzzStats(uc)

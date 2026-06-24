@@ -25,8 +25,9 @@ func NewInMemory() *InMemory {
 	return &InMemory{counts: make(map[fizzbuzz.GenerateRequest]int)}
 }
 
-// RecordFizzBuzzStat increments the counter for req.
-func (s *InMemory) RecordFizzBuzzStat(_ context.Context, req fizzbuzz.GenerateRequest) {
+// RecordFizzBuzzStat increments the counter for req. The in-memory store never
+// fails, but the signature returns an error so durable backends (e.g. Redis) can.
+func (s *InMemory) RecordFizzBuzzStat(_ context.Context, req fizzbuzz.GenerateRequest) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -36,6 +37,8 @@ func (s *InMemory) RecordFizzBuzzStat(_ context.Context, req fizzbuzz.GenerateRe
 		s.topHits = s.counts[req]
 		s.topReq = req
 	}
+
+	return nil
 }
 
 // GetMostFrequentFizzbuzzRequest returns the most frequent request and its hit

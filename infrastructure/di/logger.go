@@ -29,7 +29,8 @@ func (c *Container) getHTTPLogger() *httplog.Logger {
 			tags["environment_name"] = c.config.Env.Name
 		}
 
-		if hostname, err := os.Hostname(); err == nil {
+		hostname, err := os.Hostname()
+		if err == nil {
 			tags["host_name"] = hostname
 		}
 

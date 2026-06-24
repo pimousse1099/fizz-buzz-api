@@ -17,7 +17,7 @@ func NewRedis() *Redis {
 }
 
 // RecordFizzBuzzStat is not implemented yet.
-func (s *Redis) RecordFizzBuzzStat(_ context.Context, _ fizzbuzz.GenerateRequest) {
+func (s *Redis) RecordFizzBuzzStat(_ context.Context, _ fizzbuzz.GenerateRequest) error {
 	panic("implement me: durable stat recording via Redis")
 }
 

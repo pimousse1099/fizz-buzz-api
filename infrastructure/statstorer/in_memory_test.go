@@ -28,10 +28,10 @@ func TestInMemory_MostFrequent(t *testing.T) {
 
 	s := statstorer.NewInMemory()
 	a, b := req(3), req(7)
-	s.RecordFizzBuzzStat(context.Background(), a)
-	s.RecordFizzBuzzStat(context.Background(), a)
-	s.RecordFizzBuzzStat(context.Background(), a)
-	s.RecordFizzBuzzStat(context.Background(), b)
+	_ = s.RecordFizzBuzzStat(context.Background(), a)
+	_ = s.RecordFizzBuzzStat(context.Background(), a)
+	_ = s.RecordFizzBuzzStat(context.Background(), a)
+	_ = s.RecordFizzBuzzStat(context.Background(), b)
 
 	resp, err := s.GetMostFrequentFizzbuzzRequest(context.Background())
 	if err != nil {
@@ -48,10 +48,10 @@ func TestInMemory_TieBreakFirstToReachMax(t *testing.T) {
 
 	s := statstorer.NewInMemory()
 	a, b := req(3), req(7)
-	s.RecordFizzBuzzStat(context.Background(), a) // a=1
-	s.RecordFizzBuzzStat(context.Background(), a) // a=2  -> top a
-	s.RecordFizzBuzzStat(context.Background(), b) // b=1
-	s.RecordFizzBuzzStat(context.Background(), b) // b=2  -> not strictly greater, top stays a
+	_ = s.RecordFizzBuzzStat(context.Background(), a) // a=1
+	_ = s.RecordFizzBuzzStat(context.Background(), a) // a=2  -> top a
+	_ = s.RecordFizzBuzzStat(context.Background(), b) // b=1
+	_ = s.RecordFizzBuzzStat(context.Background(), b) // b=2  -> not strictly greater, top stays a
 
 	resp, err := s.GetMostFrequentFizzbuzzRequest(context.Background())
 	if err != nil {
@@ -80,7 +80,7 @@ func TestInMemory_ConcurrentRecord(t *testing.T) {
 			defer wg.Done()
 
 			for range perGoroutine {
-				s.RecordFizzBuzzStat(context.Background(), a)
+				_ = s.RecordFizzBuzzStat(context.Background(), a)
 			}
 		}()
 	}

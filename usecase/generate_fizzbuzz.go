@@ -7,12 +7,14 @@ import (
 	"context"
 	"strconv"
 
+	"github.com/go-chi/httplog/v2"
+
 	"github.com/Pimousse1099/fizz-buzz-api/domain/fizzbuzz"
 )
 
 // StatRecorder records a successful generation request for statistics.
 type StatRecorder interface {
-	RecordFizzBuzzStat(ctx context.Context, req fizzbuzz.GenerateRequest)
+	RecordFizzBuzzStat(ctx context.Context, req fizzbuzz.GenerateRequest) error
 }
 
 // GenerateFizzBuzz validates a request, generates the sequence, and records the
@@ -51,7 +53,13 @@ func (uc *GenerateFizzBuzz) Execute(ctx context.Context, req fizzbuzz.GenerateRe
 		}
 	}
 
-	uc.recorder.RecordFizzBuzzStat(ctx, req)
+	err = uc.recorder.RecordFizzBuzzStat(ctx, req)
+	if err != nil {
+		// Stats recording is best-effort: a failure must not fail an otherwise
+		// successful generation, so we log a warning (with the request-scoped
+		// fields) and still return the result.
+		httplog.LogEntry(ctx).Warn("failed to record fizzbuzz stat", "error", err)
+	}
 
 	return &fizzbuzz.GenerateResponse{Result: result}, nil
 }

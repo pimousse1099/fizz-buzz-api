@@ -12,10 +12,17 @@ import (
 
 type spyRecorder struct {
 	recorded []fizzbuzz.GenerateRequest
+	err      error
 }
 
-func (s *spyRecorder) RecordFizzBuzzStat(_ context.Context, req fizzbuzz.GenerateRequest) {
+func (s *spyRecorder) RecordFizzBuzzStat(_ context.Context, req fizzbuzz.GenerateRequest) error {
+	if s.err != nil {
+		return s.err
+	}
+
 	s.recorded = append(s.recorded, req)
+
+	return nil
 }
 
 func TestGenerateFizzBuzz_Execute_Output(t *testing.T) {
@@ -74,6 +81,22 @@ func TestGenerateFizzBuzz_Execute_RecordsOnlyOnSuccess(t *testing.T) {
 
 	if len(rec.recorded) != 1 || rec.recorded[0] != req {
 		t.Fatalf("expected request recorded once, got %v", rec.recorded)
+	}
+}
+
+func TestGenerateFizzBuzz_Execute_RecordErrorIsBestEffort(t *testing.T) {
+	t.Parallel()
+
+	uc := usecase.NewGenerateFizzBuzz(1000, &spyRecorder{err: errors.New("store unavailable")})
+	req := fizzbuzz.GenerateRequest{Int1: 3, Int2: 5, Limit: 5, Str1: "fizz", Str2: "buzz"}
+
+	resp, err := uc.Execute(context.Background(), req)
+	if err != nil {
+		t.Fatalf("a record failure must not fail the request, got %v", err)
+	}
+
+	if resp == nil || len(resp.Result) != 5 {
+		t.Fatalf("expected a valid response despite the record failure, got %v", resp)
 	}
 }
 
