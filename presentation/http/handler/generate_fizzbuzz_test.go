@@ -3,7 +3,6 @@ package httphandler_test
 import (
 	"context"
 	"encoding/json"
-	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -22,7 +21,7 @@ const (
 func newGenerateHandler() http.HandlerFunc {
 	uc := usecase.NewGenerateFizzBuzz(10000, statstorer.NewInMemory())
 
-	return httphandler.GenerateFizzBuzz(uc, slog.New(slog.DiscardHandler))
+	return httphandler.GenerateFizzBuzz(uc)
 }
 
 func TestGenerateFizzBuzz_OK(t *testing.T) {

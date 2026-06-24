@@ -323,3 +323,34 @@ network-bound implementations drop in without signature changes.
 - The clean-architecture layering adds files but keeps each unit small, single-purpose, and
   independently testable.
 ```
+
+## Addendum (2026-06-24): adopting chi + httplog/v2
+
+**This reverses decision §2.1** (stdlib-only, no router/framework). After review we adopted the
+chi ecosystem for the HTTP transport, because it is lightweight, `net/http`-native, and removes a
+meaningful amount of hand-rolled, edge-case-prone plumbing.
+
+**Adopted:**
+- **`github.com/go-chi/chi/v5`** as the router (`chi.NewRouter`, `r.Get(path, handler)`), replacing
+  the stdlib `ServeMux` wiring (`httpserver.NewRouter`/`Route`) and the `Chain` helper.
+- **`chi/middleware.RequestID`** and **`chi/middleware.Recoverer`** — the latter also correctly
+  re-panics `http.ErrAbortHandler` and avoids double-writing a response, which our hand-rolled
+  `Recovery` did not.
+- **`github.com/go-chi/httplog/v2`** (slog-backed) for structured request logging
+  (`httplog.RequestLogger`), configured from `config` (JSON, level, base fields as `Tags`).
+  Handlers obtain a request-scoped logger via `httplog.LogEntry(ctx)`; the container still exposes
+  the underlying `*slog.Logger` (`GetLogger`) for startup/shutdown logs and `http.Server.ErrorLog`.
+
+**Removed:** `presentation/http/middleware/{chain,recovery,request_id,logging}.go`,
+`presentation/http/server/{routes.go}` (`Route`/`NewRouter`), and the entire `presentation/http/reqctx`
+package. Business route patterns are now path-only constants next to their handlers
+(`GenerateFizzBuzzRoute = "/fizzbuzz"`), wired via `r.Get`.
+
+**Kept in-house:** the rate limiter (`infrastructure/ratelimiter` + `httpmiddleware.RateLimit`),
+since chi provides concurrency throttling but not req/s limiting, and the Redis-stub extensibility
+(§2.11) is worth preserving. `httpserver.Server` still owns the `http.Server` lifecycle
+(Start/Stop), which chi does not manage.
+
+**Dependencies added:** `github.com/go-chi/chi/v5`, `github.com/go-chi/httplog/v2`. This supersedes
+the "zero web framework" stance of §2.1 and §3 for the transport layer; the domain, use-cases and
+infrastructure remain framework-free.

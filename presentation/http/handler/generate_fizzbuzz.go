@@ -3,26 +3,26 @@ package httphandler
 import (
 	"errors"
 	"fmt"
-	"log/slog"
 	"net/http"
 	"net/url"
 	"strconv"
 
+	"github.com/go-chi/httplog/v2"
+
 	"github.com/Pimousse1099/fizz-buzz-api/domain/fizzbuzz"
-	"github.com/Pimousse1099/fizz-buzz-api/presentation/http/reqctx"
 	"github.com/Pimousse1099/fizz-buzz-api/usecase"
 )
 
-// GenerateFizzBuzzRoute is the ServeMux pattern for the generate endpoint.
-const GenerateFizzBuzzRoute = "GET /fizzbuzz"
+// GenerateFizzBuzzRoute is the route path for the generate endpoint.
+const GenerateFizzBuzzRoute = "/fizzbuzz"
 
 var errInvalidQueryParam = errors.New("invalid or missing query parameter")
 
 // GenerateFizzBuzz parses the query, runs the use-case and writes the result.
 // Parsing and validation failures map to 400; unexpected failures to 500.
-func GenerateFizzBuzz(uc *usecase.GenerateFizzBuzz, logger *slog.Logger) http.HandlerFunc {
+func GenerateFizzBuzz(uc *usecase.GenerateFizzBuzz) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		l := reqctx.Logger(r.Context(), logger).With("http_handler", "generate_fizzbuzz")
+		l := httplog.LogEntry(r.Context()).With("http_handler", "generate_fizzbuzz")
 
 		req, err := parseGenerateRequest(r)
 		if err != nil {

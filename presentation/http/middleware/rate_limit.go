@@ -1,3 +1,6 @@
+// Package httpmiddleware holds the application's own HTTP middleware. Recovery,
+// request-id and request logging come from chi and chi/httplog; the rate-limit
+// guard (which chi does not provide for req/s limiting) lives here.
 package httpmiddleware
 
 import (

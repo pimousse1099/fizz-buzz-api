@@ -4,35 +4,41 @@ import (
 	"log/slog"
 	"os"
 
+	"github.com/go-chi/httplog/v2"
+
 	"github.com/Pimousse1099/fizz-buzz-api/config"
 )
 
-// GetLogger returns the memoized structured JSON logger, tagged with the base
-// context fields (application, version, environment, host).
-func (c *Container) GetLogger() *slog.Logger {
-	if c.logger == nil {
-		handler := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
-			Level: c.config.Observability.LogLevel,
-		})
-
-		logger := slog.New(handler).With(
-			"application_name", config.AppName,
-			"application_version", config.AppVersion,
-			"environment_type", c.config.Env.Type,
-		)
+// getHTTPLogger returns the memoized httplog logger (slog-backed), tagged with
+// the base context fields. It also drives the request logging middleware.
+func (c *Container) getHTTPLogger() *httplog.Logger {
+	if c.httpLogger == nil {
+		tags := map[string]string{
+			"application_name":    config.AppName,
+			"application_version": config.AppVersion,
+			"environment_type":    c.config.Env.Type,
+		}
 
 		if c.config.Env.Name != "" {
-			logger = logger.With("environment_name", c.config.Env.Name)
+			tags["environment_name"] = c.config.Env.Name
 		}
 
 		if hostname, err := os.Hostname(); err == nil {
-			logger = logger.With("host_name", hostname)
-		} else {
-			logger.Warn("failed to resolve hostname", "error", err)
+			tags["host_name"] = hostname
 		}
 
-		c.logger = logger
+		c.httpLogger = httplog.NewLogger(config.AppName, httplog.Options{
+			JSON:     true,
+			LogLevel: c.config.Observability.LogLevel,
+			Tags:     tags,
+		})
 	}
 
-	return c.logger
+	return c.httpLogger
+}
+
+// GetLogger returns the underlying structured logger for non-request logging
+// (startup/shutdown, the HTTP server error log).
+func (c *Container) GetLogger() *slog.Logger {
+	return c.getHTTPLogger().Logger
 }
