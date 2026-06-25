@@ -35,8 +35,8 @@ func TestNew_Defaults(t *testing.T) {
 		t.Errorf("RateLimitWindow = %v, want 1m", cfg.HTTP.RateLimitWindow)
 	}
 
-	if cfg.Observability.LogLevel != slog.LevelInfo {
-		t.Errorf("LogLevel = %v, want INFO", cfg.Observability.LogLevel)
+	if cfg.Log.Level != slog.LevelInfo {
+		t.Errorf("LogLevel = %v, want INFO", cfg.Log.Level)
 	}
 }
 
@@ -60,8 +60,8 @@ func TestNew_RequiredAndOverrides(t *testing.T) {
 		t.Errorf("WriteTimeout = %v, want 30s", cfg.HTTP.WriteTimeout)
 	case cfg.FizzBuzz.MaxSequenceLength != 42:
 		t.Errorf("MaxSequenceLength = %d, want 42", cfg.FizzBuzz.MaxSequenceLength)
-	case cfg.Observability.LogLevel != slog.LevelDebug:
-		t.Errorf("LogLevel = %v, want DEBUG", cfg.Observability.LogLevel)
+	case cfg.Log.Level != slog.LevelDebug:
+		t.Errorf("LogLevel = %v, want DEBUG", cfg.Log.Level)
 	case cfg.Env.Name != "blue":
 		t.Errorf("Env.Name = %q, want blue", cfg.Env.Name)
 	}

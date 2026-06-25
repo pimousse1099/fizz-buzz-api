@@ -36,7 +36,7 @@ func (c *Container) getHTTPLogger() *ctxlog.Logger {
 
 		c.httpLogger = ctxlog.NewLogger(config.AppName, ctxlog.Options{
 			JSON:     true,
-			LogLevel: c.config.Observability.LogLevel,
+			LogLevel: c.config.Log.Level,
 			Tags:     tags,
 		})
 	}

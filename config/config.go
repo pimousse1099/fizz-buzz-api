@@ -22,11 +22,11 @@ var AppVersion = "DEV"
 
 // Config is the root configuration, grouped by concern.
 type Config struct {
-	Env           Env           `env:",prefix=ENV_"`
-	HTTP          HTTP          `env:",prefix=HTTP_"`
-	FizzBuzz      FizzBuzz      `env:",prefix=FIZZBUZZ_"`
-	Observability Observability `env:",prefix=LOG_"`
-	Tracing       Tracing       `env:",prefix=TRACING_"`
+	Env      Env      `env:",prefix=ENV_"`
+	HTTP     HTTP     `env:",prefix=HTTP_"`
+	FizzBuzz FizzBuzz `env:",prefix=FIZZBUZZ_"`
+	Log      Log      `env:",prefix=LOG_"`
+	Tracing  Tracing  `env:",prefix=TRACING_"`
 }
 
 // Env identifies the deployment environment, used to tag logs/observability.
@@ -52,11 +52,11 @@ type FizzBuzz struct {
 	MaxSequenceLength int `env:"MAX_SEQUENCE_LENGTH,required"` // FIZZBUZZ_MAX_SEQUENCE_LENGTH
 }
 
-// Observability holds logging/observability configuration.
-type Observability struct {
-	// LogLevel is parsed directly into a slog.Level by go-envconfig via the
+// Log holds logging/observability configuration.
+type Log struct {
+	// Level is parsed directly into a slog.Level by go-envconfig via the
 	// type's encoding.TextUnmarshaler (accepts debug/info/warn/error).
-	LogLevel slog.Level `env:"LEVEL,required"` // LOG_LEVEL
+	Level slog.Level `env:"LEVEL,required"` // LOG_LEVEL
 }
 
 // Tracing holds OpenTelemetry tracing configuration. Disabled by default so the

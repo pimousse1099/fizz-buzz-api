@@ -190,7 +190,7 @@ extensibility expected of production code without pulling in real infrastructure
 **Decision:**
 - Configuration loaded from environment variables via `sethvargo/go-envconfig` (no stdlib
   equivalent for struct↔env mapping), **grouped by concern** into sub-structs with prefixes:
-  `Env` (`ENV_`), `HTTP` (`HTTP_`), `FizzBuzz` (`FIZZBUZZ_`), `Observability` (`LOG_`).
+  `Env` (`ENV_`), `HTTP` (`HTTP_`), `FizzBuzz` (`FIZZBUZZ_`), `Log` (`LOG_`).
   `AppName`/`AppVersion` as constant/build-time var.
 - **Required (no default), to force explicit deployment values:** `ENV_TYPE`, `HTTP_ADDR`,
   `FIZZBUZZ_MAX_SEQUENCE_LENGTH` (the bound on `limit`, renamed from `MaxLimit` for clarity),
