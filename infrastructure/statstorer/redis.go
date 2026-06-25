@@ -6,10 +6,15 @@ import (
 	"github.com/Pimousse1099/fizz-buzz-api/domain/fizzbuzz"
 )
 
-// Redis is a placeholder for a durable, shared stat store. It demonstrates how
-// a distributed backend would plug into the same StatRecorder/StatReader
-// interfaces without touching the use-cases.
-type Redis struct{}
+type (
+	// Redis is a placeholder for a durable, shared stat store. It demonstrates how
+	// a distributed backend would plug into the same StatRecorder/StatReader
+	// interfaces without touching the use-cases.
+	Redis struct{}
+
+	// RedisConfig is the configuration for the Redis stat store.
+	RedisConfig struct{}
+)
 
 // NewRedis builds the placeholder.
 func NewRedis() *Redis {
