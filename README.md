@@ -109,21 +109,45 @@ docker run --rm -p 8080:8080 \
 
 ## Production-readiness
 
-This service is built to the following principles (details in the
-[developer guide](docs/developer-guide.md)):
+Details and rationale in the [developer guide](docs/developer-guide.md) and the
+[ADRs](docs/architecture-decision-records/README.md).
 
-- **12-factor** — config from the environment; logs as a JSON event stream to
-  stdout (no log files); stateless; graceful shutdown on `SIGINT`/`SIGTERM`.
-- **Clean/hexagonal architecture** + **SOLID** (interface-segregated ports,
-  dependency inversion via a DI container) and the **Law of Demeter** (thin
-  layers; handlers talk to use-cases, never to the store directly).
-- **Operational endpoints** — separate liveness (`/healthz`) and readiness
-  (`/readyz`) probes.
-- **Observability** — structured request and application logs with a request id;
-  distributed **tracing** via OpenTelemetry (opt-in). HTTP **golden-signal
-  metrics** (latency, throughput, error rate) are **delegated to the
-  infrastructure layer** (service mesh / ingress / load balancer / eBPF) rather
-  than instrumented in-app —
+### The twelve factors
+
+| # | Factor | How it is applied here |
+|---|---|---|
+| 1 | Codebase | One codebase in Git, many deploys |
+| 2 | Dependencies | Declared/locked in `go.mod`/`go.sum`; CGO-free static binary — no system deps |
+| 3 | Config | All config from environment variables (`go-envconfig`); required vars have no default |
+| 4 | Backing services | The stat store and rate-limit counter sit behind interfaces; a Redis backend attaches via config with no code change (in-memory by default) |
+| 5 | Build, release, run | Build = the immutable distroless image (CI); run = that same image configured purely by env — stages are separate |
+| 6 | Processes | Stateless **except** the in-memory stats counter, which is **per-instance and reset on restart** — a deliberate trade-off; a shared store (Redis) is the documented path to true statelessness |
+| 7 | Port binding | Self-contained binary binds `HTTP_ADDR`; no external web server |
+| 8 | Concurrency | Scales out as identical processes; note the per-instance state from factor 6 — stats and the in-memory rate limit are **not shared across replicas**, so authoritative limits/stats belong at the edge or a shared store |
+| 9 | Disposability | Fast startup; graceful shutdown on `SIGINT`/`SIGTERM` with a bounded deadline |
+| 10 | Dev/prod parity | The same binary/image everywhere; behaviour driven only by env |
+| 11 | Logs | Structured JSON to stdout as an event stream; no log files or rotation in-app |
+| 12 | Admin processes | None required; one-off tasks would run as separate invocations of the same binary |
+
+### Design principles
+
+- **Clean / hexagonal architecture** with the dependency rule
+  `presentation → usecase → domain`; the domain depends on nothing.
+- **SOLID** — single-responsibility packages; interface-**segregated** ports
+  (`StatRecorder` / `StatReader`); **dependency inversion** via the DI container.
+- **Law of Demeter** — components talk only to their immediate collaborators
+  (handlers → use-cases → ports; a handler never reaches through to the store),
+  **and a function receives only what it needs**, never a god-object: e.g.
+  `Validate(maxLimit int)` takes the single bound it checks — not the whole
+  `Config` — and the rate-limit middleware is handed a `RateLimiter`, not the
+  container. (You hand the baker the coins, not your whole wallet.)
+
+### Observability & safety
+
+- Separate liveness (`/healthz`) and readiness (`/readyz`) probes.
+- Structured request/application logs with a request id; opt-in OpenTelemetry
+  **tracing**. HTTP **golden-signal metrics** are **delegated to the
+  infrastructure layer** (mesh / ingress / LB / eBPF), not instrumented in-app —
   see [ADR 0017](docs/architecture-decision-records/0017-metrics-delegated-to-infra.md).
-- **Safety** — input validation, bounded response size, per-IP rate limiting,
-  the race detector in CI, and a strict linter.
+- Input validation, bounded response size, per-IP rate limiting, the race
+  detector in CI, and a strict linter.

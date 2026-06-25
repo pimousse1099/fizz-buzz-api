@@ -82,9 +82,13 @@ the process is stateless and disposable (fast startup, graceful shutdown on
 - *Dependency inversion* — use-cases depend on ports they declare; the DI
   container injects concrete implementations.
 
-**Law of Demeter.** Layers talk only to their immediate neighbour: handlers
-invoke a use-case, the use-case talks to its ports — a handler never reaches
-into the store or the domain internals. Thin transport, thin handlers.
+**Law of Demeter.** Two facets. (1) Components talk only to their immediate
+neighbour: handlers invoke a use-case, the use-case talks to its ports — a
+handler never reaches through into the store or the domain internals. (2) A
+function receives only what it needs, never a god-object: `Validate(maxLimit int)`
+takes the single bound it checks rather than the whole `Config`; the rate-limit
+middleware is handed a `RateLimiter`, not the DI container. You hand the baker
+the coins, not your whole wallet.
 
 **Operational endpoints.** Liveness (`/healthz`) and readiness (`/readyz`) are
 distinct ([ADR 0008](architecture-decision-records/0008-operational-endpoints-health-readiness.md)):
