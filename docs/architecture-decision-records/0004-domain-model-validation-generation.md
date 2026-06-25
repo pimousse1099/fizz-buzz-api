@@ -18,7 +18,7 @@ The domain package holds **data structures** and **validation** only — no gene
 - `GenerateRequest{Int1, Int2, Limit int; Str1, Str2 string}` — value object, used as a map key
   in the stat store (therefore comparable; no pointer fields).
 - `GenerateResponse{Result []string}`
-- `GetStatsResponse{Request GenerateRequest; Hits int}`
+- `GetStatsResponse{Request GenerateRequest; TotalHits int}`
 - Sentinel errors in `error.go` (see [0005](0005-error-to-http-status-mapping.md)).
 
 ### Validation lives in the domain, triggered by the use-case

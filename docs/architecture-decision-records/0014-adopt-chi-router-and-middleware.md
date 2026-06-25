@@ -29,7 +29,7 @@ Replace the stdlib-only transport layer with the chi ecosystem:
 - `presentation/http/server/routes.go` (`Route`/`NewRouter`)
 - `presentation/http/reqctx` (entire package)
 
-**Kept in-house:** `httpserver/server.go` — owns the `http.Server` lifecycle (Start/Stop,
+**Kept in-house:** `server/server.go` (package `httpserver`) — owns the `http.Server` lifecycle (Start/Stop,
 timeouts, BaseContext, ErrorLog). chi is a router only and does not manage the server.
 
 **Route constants:** business route patterns are now path-only constants defined next to their

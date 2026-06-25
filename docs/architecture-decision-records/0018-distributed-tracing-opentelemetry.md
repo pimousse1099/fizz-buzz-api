@@ -29,7 +29,8 @@ Instrument distributed tracing with the **vanilla OpenTelemetry SDK** over **OTL
 ### Use-case spans
 
 ```go
-ctx, span := otel.Tracer("fizzbuzz").Start(ctx, "usecase.generate_fizzbuzz")
+// tracerName = "github.com/Pimousse1099/fizz-buzz-api/usecase" (instrumentation scope)
+ctx, span := otel.Tracer(tracerName).Start(ctx, "usecase.generate_fizzbuzz")
 defer span.End()
 ```
 

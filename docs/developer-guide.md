@@ -24,8 +24,7 @@ flowchart TB
     end
     subgraph infrastructure["infrastructure"]
         STORE["statstorer (in-memory + Redis stub)"]
-        DI["di (IoC container)"]
-        TR["tracing (OTel provider)"]
+        DI["di (IoC container + tracer provider)"]
     end
 
     H --> UC
@@ -38,7 +37,6 @@ flowchart TB
     DI --> UC
     DI --> STORE
     DI --> SRV
-    DI --> TR
 ```
 
 **Dependency rule:** `presentation → application → domain`. The **domain** depends
@@ -59,7 +57,6 @@ infrastructure/
   di/                        # IoC container: lazy getters, HTTP server, tracer provider
 presentation/http/
   handler/  (httphandler)    # query parsing, handlers, JSON responses
-  middleware/ (httpmiddleware) # the bits chi doesn't provide
   server/   (httpserver)     # http.Server lifecycle (Start/Stop)
 docs/                        # this guide + ADRs
 ```

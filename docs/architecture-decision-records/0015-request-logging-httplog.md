@@ -18,16 +18,17 @@ Use **`github.com/go-chi/httplog/v2`** for structured per-request logging.
 **Configuration:** `httplog.RequestLogger` middleware is configured from `config` (JSON format,
 log level, base fields as `Tags`).
 
-**Request-scoped enrichment:** handlers and use-cases obtain the request-scoped log entry via
-`httplog.LogEntry(ctx)` and enrich it with contextual fields:
+**Request-scoped enrichment:** handlers and use-cases enrich the request-scoped log entry with
+contextual fields via `httplog.LogEntrySetField` (and read the logger back via
+`httplog.LogEntry(ctx)`):
 
 ```go
 // aliased import
 import ctxlog "github.com/go-chi/httplog/v2"
 
 // in a handler or use-case
-ctxlog.LogEntry(ctx).Set("http_handler", "generate_fizzbuzz")
-ctxlog.LogEntry(ctx).Set("use_case", "generate_fizzbuzz")
+ctxlog.LogEntrySetField(ctx, "http_handler", slog.StringValue("generate_fizzbuzz"))
+ctxlog.LogEntrySetField(ctx, "use_case", slog.StringValue("generate_fizzbuzz"))
 ```
 
 The import is aliased as `ctxlog` to express intent (context-scoped log enrichment) and to
@@ -42,7 +43,7 @@ per-request middleware path changed.
 ## Consequences
 
 - Per-request logs include duration, status code, method, path, and any fields added via
-  `ctxlog.LogEntry(ctx).Set(...)` — without any hand-rolled accumulation logic.
+  `ctxlog.LogEntrySetField(ctx, ...)` — without any hand-rolled accumulation logic.
 - Handlers and use-cases can enrich the same log entry without passing a logger explicitly
   through every function signature.
 - The `sloglint` linter ([0012](0012-linting-golangci-lint.md)) continues to enforce consistent

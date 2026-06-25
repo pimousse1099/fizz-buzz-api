@@ -22,7 +22,9 @@ grouped by concern, with env-var prefix per sub-struct:
 | `FizzBuzz` | `FIZZBUZZ_` | `FIZZBUZZ_MAX_SEQUENCE_LENGTH` |
 | `Log` | `LOG_` | `LOG_LEVEL` |
 | `Tracing` | `TRACING_` | — (optional, see [0018](0018-distributed-tracing-opentelemetry.md)) |
-| `RateLimit` | `RATE_LIMIT_` | — (defaults provided, see [0016](0016-rate-limiting-httprate.md)) |
+
+Rate-limit knobs live inside the `HTTP` sub-struct (`HTTP_RATE_LIMIT_REQUESTS`,
+`HTTP_RATE_LIMIT_WINDOW`; defaults provided, see [0016](0016-rate-limiting-httprate.md)).
 
 `AppName` / `AppVersion` are compile-time constants / ldflags-injected vars.
 
@@ -50,8 +52,8 @@ startup banner (slog)
   → graceful Stop(ctx)  (timeout derived from base context)
 ```
 
-Lifecycle logs (starting on addr / signal received / shutting down) live in `main`; `httpserver/server.go`
-stays purely mechanical (Start/Stop, no log statements).
+Lifecycle logs (starting on addr / signal received / shutting down) live in `main`; the `httpserver`
+package (`server/server.go`) stays purely mechanical (Start/Stop, no log statements).
 
 ## Consequences
 
@@ -59,7 +61,7 @@ stays purely mechanical (Start/Stop, no log statements).
   server.
 - The single base context flows from `main` through the DI container into `http.Server.BaseContext`,
   ensuring clean cancellation propagation on shutdown.
-- Grouping config by concern (Env/HTTP/FizzBuzz/Log/Tracing/RateLimit) keeps the struct
-  navigable and maps naturally to deployment secret scopes.
+- Grouping config by concern (Env/HTTP/FizzBuzz/Log/Tracing) keeps the struct navigable and maps
+  naturally to deployment secret scopes.
 - `go-envconfig` is the only configuration dependency; the stdlib has no equivalent for
   struct↔env mapping.

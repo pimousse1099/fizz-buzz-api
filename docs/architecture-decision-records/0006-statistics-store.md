@@ -23,11 +23,11 @@ Two interfaces, defined where consumed (dependency-inversion, see [0001](0001-cl
 
 - `StatRecorder` (in `usecase/generate_fizzbuzz.go`) — write side:
   ```go
-  Record(ctx context.Context, req fizzbuzz.GenerateRequest) error
+  RecordFizzBuzzStat(ctx context.Context, req fizzbuzz.GenerateRequest) error
   ```
 - `StatReader` (in `usecase/get_fizzbuzz_stats.go`) — read side:
   ```go
-  MostFrequent(ctx context.Context) (fizzbuzz.GenerateRequest, int, bool)
+  GetMostFrequentFizzbuzzRequest(ctx context.Context) (*fizzbuzz.GetStatsResponse, error)
   ```
 
 The in-memory store implements both. A `redis.go` file (struct + `panic("implement me")`)

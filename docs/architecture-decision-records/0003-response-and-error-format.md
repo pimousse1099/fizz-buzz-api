@@ -19,7 +19,7 @@ representation of "a list of strings" as stated in the spec.
 
 **Success — stats:**
 ```json
-{"int1":3,"int2":5,"limit":100,"str1":"fizz","str2":"buzz","hits":42}
+{"request":{"int1":3,"int2":5,"limit":100,"str1":"fizz","str2":"buzz"},"total_hits":42}
 ```
 
 **Error:** a dedicated HTTP status code (400/404/429/500) plus a valid JSON body. A JSON string

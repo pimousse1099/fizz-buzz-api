@@ -16,7 +16,7 @@ enforces quality gates on every commit and publishes images on release.
 **Build stage:** compiles a static, CGO-free binary:
 ```
 -trimpath
--ldflags="-s -w -X main.AppVersion=$(git describe --tags)"
+-ldflags="-s -w -X github.com/Pimousse1099/fizz-buzz-api/config.AppVersion=${APP_VERSION}"
 CGO_ENABLED=0
 ```
 

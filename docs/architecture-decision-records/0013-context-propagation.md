@@ -17,15 +17,15 @@ parameter:
 
 ```go
 // Use-cases
-func (uc *GenerateFizzBuzz) Execute(ctx context.Context, req fizzbuzz.GenerateRequest) (fizzbuzz.GenerateResponse, error)
-func (uc *GetFizzBuzzStats) Execute(ctx context.Context, req fizzbuzz.GetStatsRequest) (fizzbuzz.GetStatsResponse, error)
+func (uc *GenerateFizzBuzz) Execute(ctx context.Context, req fizzbuzz.GenerateRequest) (*fizzbuzz.GenerateResponse, error)
+func (uc *GetFizzBuzzStats) Execute(ctx context.Context) (*fizzbuzz.GetStatsResponse, error)
 
 // Ports
 type StatRecorder interface {
-    Record(ctx context.Context, req fizzbuzz.GenerateRequest) error
+    RecordFizzBuzzStat(ctx context.Context, req fizzbuzz.GenerateRequest) error
 }
 type StatReader interface {
-    MostFrequent(ctx context.Context) (fizzbuzz.GenerateRequest, int, bool)
+    GetMostFrequentFizzbuzzRequest(ctx context.Context) (*fizzbuzz.GetStatsResponse, error)
 }
 ```
 

@@ -33,8 +33,7 @@ flowchart TB
     end
     subgraph infrastructure["infrastructure"]
         STORE["statstorer (in-memory + Redis stub)"]
-        DI["di (IoC container)"]
-        TR["tracing (OTel provider)"]
+        DI["di (IoC container + tracer provider)"]
     end
 
     H --> UC
@@ -47,7 +46,6 @@ flowchart TB
     DI --> UC
     DI --> STORE
     DI --> SRV
-    DI --> TR
 ```
 
 The dependency rule flows inward: presentation depends on application, application depends on
@@ -64,16 +62,15 @@ domain/fizzbuzz/         # package fizzbuzz — named after the business concept
 
 usecase/
   generate_fizzbuzz.go   # defines StatRecorder port; Execute(ctx, req) — validate → generate → record
-  get_fizzbuzz_stats.go  # defines StatReader port; Execute(ctx, req)
+  get_fizzbuzz_stats.go  # defines StatReader port; Execute(ctx)
 
 presentation/http/
-  handler/               # thin handlers: parse → usecase → JSON response
-  httpserver/            # Server lifecycle: Start / Stop, timeouts, BaseContext, ErrorLog
+  handler/               # package httphandler — thin handlers: parse → usecase → JSON
+  server/                # package httpserver — Server lifecycle: Start/Stop, timeouts, BaseContext, ErrorLog
 
 infrastructure/
-  di/                    # IoC container with lazy memoised getters
+  di/                    # IoC container (lazy getters) + tracer provider (tracing.go)
   statstorer/            # in_memory.go + redis.go (placeholder)
-  tracing/               # OTel provider bootstrap
 
 config/config.go         # sethvargo/go-envconfig, grouped sub-structs
 cmd/main.go              # entrypoint — config → DI → Start → signal → Stop

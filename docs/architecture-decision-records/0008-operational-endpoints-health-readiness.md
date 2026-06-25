@@ -20,8 +20,8 @@ Expose the following routes:
 | `GET` | `/readyz` | Readiness probe — returns `200 OK` when the server is ready to serve |
 
 `/healthz` (liveness) and `/readyz` (readiness) follow the Kubernetes convention. Both return
-`200 OK` with a minimal JSON body (e.g. `{"status":"ok"}`). They are cheap, synchronous checks
-that do not touch the stat store or other I/O.
+`200 OK` with an empty body. They are cheap, synchronous checks that do not touch the stat store
+or other I/O.
 
 Route path constants are defined next to their handlers (`GenerateFizzBuzzRoute = "/fizzbuzz"`)
 and wired via the chi router (see [0014](0014-adopt-chi-router-and-middleware.md)).
