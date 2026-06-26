@@ -1,3 +1,4 @@
+// Package main implements a simple fizz-buzz REST API server.
 package main
 
 import (
@@ -55,6 +56,13 @@ const (
 )
 
 func main() {
+	err := run()
+	if err != nil {
+		os.Exit(1)
+	}
+}
+
+func run() error {
 	e := getHTTPServer()
 
 	// Cancel the start context on SIGINT/SIGTERM so StartConfig performs a graceful shutdown.
@@ -68,10 +76,13 @@ func main() {
 	err := sc.Start(ctx, e)
 	if err != nil && !errors.Is(err, http.ErrServerClosed) {
 		e.Logger.Error("server terminated unexpectedly", "error", err)
-		os.Exit(1)
+
+		return err
 	}
 
 	e.Logger.Info("server stopped gracefully")
+
+	return nil
 }
 
 func getHTTPServer() *echo.Echo {
@@ -118,11 +129,15 @@ func requestLogger(logger *slog.Logger) echo.MiddlewareFunc {
 				slog.String("request_id", v.RequestID),
 			}
 			ctx := c.Request().Context()
+
 			if v.Error != nil {
 				logger.LogAttrs(ctx, slog.LevelError, "request failed", append(attrs, slog.String("error", v.Error.Error()))...)
-				return nil
+
+				return nil //nolint:nilerr // v.Error is the request's error being logged, not a failure of this logger
 			}
+
 			logger.LogAttrs(ctx, slog.LevelInfo, "request handled", attrs...)
+
 			return nil
 		},
 	})
@@ -137,7 +152,9 @@ func metricsHandler(mc *metricsCollector) echo.HandlerFunc {
 		if mc == nil || mc.RequestCounters == nil {
 			return c.JSON(http.StatusOK, "no data collected yet")
 		}
+
 		sort.Sort(mc.RequestCounters)
+
 		return c.JSON(http.StatusOK, mc.RequestCounters)
 	}
 }
@@ -172,17 +189,23 @@ func fizzBuzzController(fizzBuzzReq *fizzBuzzRequest) *fizzBuzzResponse {
 
 	for i := uint(1); i <= fizzBuzzReq.Limit; i++ {
 		res := ""
+
 		if i%fizzBuzzReq.Int1 == 0 {
 			res += fizzBuzzReq.Str1
 		}
+
 		if i%fizzBuzzReq.Int2 == 0 {
 			res += fizzBuzzReq.Str2
 		}
+
 		if res != "" {
 			fizzBuzzResp[i-1] = res
+
 			continue
 		}
+
 		fizzBuzzResp[i-1] = strconv.FormatUint(uint64(i), 10)
 	}
+
 	return &fizzBuzzResp
 }

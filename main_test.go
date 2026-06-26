@@ -14,7 +14,9 @@ import (
 // =====================================================================================================================
 
 func TestMainWithQueryParams(t *testing.T) {
-	request := httptest.NewRequest(http.MethodGet, "/fizz-buzz?int1=2&int2=3&limit=10&str1=fizz&str2=buzz", nil)
+	t.Parallel()
+
+	request := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/fizz-buzz?int1=2&int2=3&limit=10&str1=fizz&str2=buzz", http.NoBody)
 	response := httptest.NewRecorder()
 
 	getHTTPServer().ServeHTTP(response, request)
@@ -26,8 +28,10 @@ func TestMainWithQueryParams(t *testing.T) {
 }
 
 func TestMainWithMissingParams(t *testing.T) {
+	t.Parallel()
+
 	// str2 is missing -> validation must fail
-	request := httptest.NewRequest(http.MethodGet, "/fizz-buzz?int1=2&int2=3&limit=20&str1=fizz", nil)
+	request := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/fizz-buzz?int1=2&int2=3&limit=20&str1=fizz", http.NoBody)
 	response := httptest.NewRecorder()
 
 	getHTTPServer().ServeHTTP(response, request)
@@ -43,6 +47,8 @@ func TestMainWithMissingParams(t *testing.T) {
 // =====================================================================================================================
 
 func TestFizzBuzz(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name             string
 		request          *fizzBuzzRequest
@@ -116,22 +122,11 @@ func TestFizzBuzz(t *testing.T) {
 				"1", "2", "fizz&é\"'è§", "4", " #(~?-_`buzz", "fizz&é\"'è§", "7", "8", "fizz&é\"'è§", " #(~?-_`buzz", "11", "fizz&é\"'è§", "13", "14", "fizz&é\"'è§ #(~?-_`buzz", "16", "17", "fizz&é\"'è§", "19", " #(~?-_`buzz",
 			},
 		},
-		{
-			name: "test with special chars",
-			request: &fizzBuzzRequest{
-				Int1:  3,
-				Int2:  5,
-				Limit: 20,
-				Str1:  "fizz&é\"'è§",
-				Str2:  " #(~?-_`buzz",
-			},
-			expectedResponse: &fizzBuzzResponse{
-				"1", "2", "fizz&é\"'è§", "4", " #(~?-_`buzz", "fizz&é\"'è§", "7", "8", "fizz&é\"'è§", " #(~?-_`buzz", "11", "fizz&é\"'è§", "13", "14", "fizz&é\"'è§ #(~?-_`buzz", "16", "17", "fizz&é\"'è§", "19", " #(~?-_`buzz",
-			},
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			actualResponse := fizzBuzzController(tt.request)
 			// compare fizzbuzz responses
 			assert.Equal(t, tt.expectedResponse, actualResponse)

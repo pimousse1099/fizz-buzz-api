@@ -15,6 +15,7 @@ func (mc *metricsCollector) IncRequestCounter(reqBody string) {
 			// increment existing request counter
 			rc.Counter++
 			mc.mu.Unlock()
+
 			return
 		}
 	}
@@ -45,7 +46,5 @@ func (rcs RequestCounters) Less(i, j int) bool {
 
 // Swap swaps the elements with indexes i and j.
 func (rcs RequestCounters) Swap(i, j int) {
-	tmp := rcs[i]
-	rcs[i] = rcs[j]
-	rcs[j] = tmp
+	rcs[i], rcs[j] = rcs[j], rcs[i]
 }

@@ -1,0 +1,108 @@
+version: "2"
+
+run:
+  timeout: 5m
+
+linters:
+  default: none
+  enable:
+    - bodyclose
+    - contextcheck
+    - cyclop
+    - dogsled
+    - dupl
+    - durationcheck
+    - errcheck
+    - errname
+    - errorlint
+    - err113
+    - exhaustive
+    - forbidigo
+    - forcetypeassert
+    - funlen
+    - gochecknoglobals
+    - gochecknoinits
+    - gocognit
+    - goconst
+    - gocritic
+    - godot
+    - goprintffuncname
+    - gosec
+    - govet
+    - importas
+    - inamedparam
+    - ineffassign
+    - lll
+    - makezero
+    - mirror
+    - misspell
+    - mnd
+    - nakedret
+    - nestif
+    - nilerr
+    - nilnil
+    - nlreturn
+    - noctx
+    - nolintlint
+    - paralleltest
+    - prealloc
+    - predeclared
+    - reassign
+    - revive
+    - sloglint
+    - staticcheck
+    - testableexamples
+    - testpackage
+    - thelper
+    - tparallel
+    - unconvert
+    - unparam
+    - unused
+    - usestdlibvars
+    - usetesting
+    - wastedassign
+    - whitespace
+    - wsl_v5
+  settings:
+    cyclop:
+      max-complexity: 15
+    dupl:
+      threshold: 100
+    funlen:
+      lines: 100
+      statements: 50
+    goconst:
+      min-len: 2
+      min-occurrences: 2
+    gocritic:
+      enabled-tags:
+        - diagnostic
+        - opinionated
+        - performance
+        - style
+    lll:
+      line-length: 150
+    misspell:
+      locale: US
+  exclusions:
+    rules:
+      # Test files: relax linters that are noisy on test fixtures and tables —
+      # repeated literal fixtures (goconst), table-driven one-liner closures
+      # (nlreturn), long table funcs (funlen), duplicated arrange blocks (dupl),
+      # dynamic test errors (err113), test-local globals (gochecknoglobals) and
+      # wide expected-output fixtures (lll).
+      - linters: [funlen, dupl, err113, gochecknoglobals, goconst, nlreturn, lll]
+        path: _test\.go
+
+formatters:
+  enable:
+    - gci
+    - gofumpt
+  settings:
+    gci:
+      sections:
+        - standard
+        - default
+        - prefix(github.com/rmasclef)
+    gofumpt:
+      extra-rules: true
