@@ -6,8 +6,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/pimousse1099/fizz_buzz_api/internal/domain"
-	"github.com/pimousse1099/fizz_buzz_api/internal/statsstorer"
+	"github.com/pimousse1099/fizz-buzz-api/internal/domain"
+	"github.com/pimousse1099/fizz-buzz-api/internal/statsstorer"
 )
 
 func TestInMemoryEmpty(t *testing.T) {

@@ -10,8 +10,8 @@ import (
 
 	"github.com/go-playground/validator/v10"
 
-	httpserver "github.com/pimousse1099/fizz_buzz_api/internal/http"
-	"github.com/pimousse1099/fizz_buzz_api/internal/statsstorer"
+	httpserver "github.com/pimousse1099/fizz-buzz-api/internal/http"
+	"github.com/pimousse1099/fizz-buzz-api/internal/statsstorer"
 )
 
 func main() {
