@@ -1,24 +1,31 @@
 # fizz-buzz-api
-implementation of a fizz-buzz REST ~~ful~~ API
 
-## simple version
-https://github.com/rmasclef/fizz-buzz-api/pull/1
-https://github.com/rmasclef/fizz-buzz-api/tree/simple-version
+A fizz-buzz REST API. The endpoint takes five parameters — `int1`, `int2`, `limit`, `str1`, `str2` —
+and returns the list from 1 to `limit` where multiples of `int1` become `str1`, multiples of `int2`
+become `str2`, multiples of both become `str1str2`, and every other number is itself. A statistics
+endpoint reports the most frequently requested call.
 
-It can be even smaller if we don't want content-type filtering, graceful shutdow and metrics handler
-Uses `echo` framework to do things fast (request binding, validation, logs, error recovering ...)
+It comes in **two implementations** — pick the one that fits your needs.
 
-## structured version
+## simple
 
-https://github.com/rmasclef/fizz-buzz-api/pull/2
-https://github.com/rmasclef/fizz-buzz-api/tree/pure-go-version
+- PR: https://github.com/pimousse1099/fizz-buzz-api/pull/1
+- Branch: https://github.com/pimousse1099/fizz-buzz-api/tree/simple-version
 
-Structured (over-ingineered) version of fizz-buzz API
-Less understandable but more `prod-ready` and extensible ...
+A lean, pragmatic implementation on the [echo v5](https://echo.labstack.com/) framework, organised
+into small `internal/` packages (`domain`, `http`, `statsstorer`). Structured JSON logging via
+`log/slog` (with a per-request `request_id`), a sensible middleware stack (rate limiting, body-size
+cap, request timeout, gzip, security headers), graceful shutdown, and a distroless container image.
+CI runs lint, race tests and image builds. It reads top to bottom in one sitting; its remaining
+trade-offs are documented honestly in the branch README.
 
-## bonus - protobuf version
+## clean architecture
 
-https://github.com/rmasclef/fizz-buzz-api/tree/protobuf-version
+- PR: https://github.com/pimousse1099/fizz-buzz-api/pull/3
+- Branch: https://github.com/pimousse1099/fizz-buzz-api/tree/clean-archi-2026
 
-Request binding and validation is done by protobuf model
-Theorically faster than a JSON API (useless for our case)
+A hexagonal / clean-architecture implementation: dependencies flow inward (domain → use cases →
+presentation), wired by a dependency-injection container. Adds OpenTelemetry tracing, liveness and
+readiness probes, stores hidden behind interfaces (swappable, e.g. in-memory or Redis), and an
+architecture-decision-record per design choice. More moving parts, but the most production-hardened
+and extensible option.
