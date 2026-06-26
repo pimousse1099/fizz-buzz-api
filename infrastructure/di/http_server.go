@@ -56,7 +56,12 @@ func (c *Container) getHTTPHandler() http.Handler {
 	// Compress JSON/text responses (chi's default set includes application/json),
 	// negotiated via Accept-Encoding.
 	router.Use(middleware.Compress(flate.BestSpeed))
-	router.Use(httprate.LimitByIP(c.config.HTTP.RateLimitRequests, c.config.HTTP.RateLimitWindow))
+	// Rate-limit per client IP. KeyByRealIP reads True-Client-IP / X-Real-IP /
+	// X-Forwarded-For, which are client-spoofable, so this is only sound behind a
+	// trusted proxy/ingress that sets and overwrites those headers (and strips any
+	// inbound copies). Without such a proxy, switch to httprate.LimitByIP, which
+	// keys on the socket address instead. See ADR 0016.
+	router.Use(httprate.LimitByRealIP(c.config.HTTP.RateLimitRequests, c.config.HTTP.RateLimitWindow))
 
 	// Liveness: the process is up. Readiness: ready to serve traffic — there are
 	// no mandatory external dependencies yet, so it always reports ready; a

@@ -61,9 +61,14 @@ successful generation has happened.
   `FIZZBUZZ_MAX_SEQUENCE_LENGTH` to cap response size (DoS guard).
 - **Rate limiting** — per client IP, `HTTP_RATE_LIMIT_REQUESTS` per
   `HTTP_RATE_LIMIT_WINDOW`; over the limit returns `429` with `Retry-After` and
-  `X-RateLimit-*` headers. (In a scaled deployment the authoritative limit
+  `X-RateLimit-*` headers. The client IP comes from `X-Forwarded-For` /
+  `X-Real-IP` / `True-Client-IP`, which are spoofable — so this is only sound
+  **behind a trusted proxy** that sets and overwrites those headers; without one,
+  use socket-based limiting. (In a scaled deployment the authoritative limit
   belongs at the edge / a shared store — see
   [ADR 0016](docs/architecture-decision-records/0016-rate-limiting-httprate.md).)
+- **Response compression** — gzip/deflate for compressible types (incl. JSON),
+  negotiated via `Accept-Encoding`.
 - **Timeouts** — read-header / write / idle timeouts on the HTTP server.
 
 ## Configuration
