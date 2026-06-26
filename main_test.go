@@ -1,13 +1,21 @@
 package main
 
 import (
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"testing"
 
 	"github.com/labstack/echo/v5"
 	"github.com/stretchr/testify/assert"
 )
+
+// testServer builds the HTTP server with a logger that discards output so test
+// runs stay quiet.
+func testServer() *echo.Echo {
+	return getHTTPServer(slog.New(slog.DiscardHandler))
+}
 
 // =====================================================================================================================
 // ============================================= INTEGRATION tests =====================================================
@@ -19,7 +27,7 @@ func TestMainWithQueryParams(t *testing.T) {
 	request := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/fizz-buzz?int1=2&int2=3&limit=10&str1=fizz&str2=buzz", http.NoBody)
 	response := httptest.NewRecorder()
 
-	getHTTPServer().ServeHTTP(response, request)
+	testServer().ServeHTTP(response, request)
 
 	check := assert.New(t)
 	check.Equal(http.StatusOK, response.Code, response.Body.String())
@@ -34,12 +42,46 @@ func TestMainWithMissingParams(t *testing.T) {
 	request := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/fizz-buzz?int1=2&int2=3&limit=20&str1=fizz", http.NoBody)
 	response := httptest.NewRecorder()
 
-	getHTTPServer().ServeHTTP(response, request)
+	testServer().ServeHTTP(response, request)
 
 	check := assert.New(t)
 	check.Equal(http.StatusBadRequest, response.Code)
 	check.Equal(echo.MIMEApplicationJSON, response.Header().Get(echo.HeaderContentType))
-	check.JSONEq(`"Key: 'fizzBuzzRequest.Str2' Error:Field validation for 'Str2' failed on the 'required' tag"`, response.Body.String())
+	check.JSONEq(`{"message":"Key: 'fizzBuzzRequest.Str2' Error:Field validation for 'Str2' failed on the 'required' tag"}`, response.Body.String())
+}
+
+func TestMetricsCollectorConcurrent(t *testing.T) {
+	t.Parallel()
+
+	mc := newMetricsCollector()
+	popular := fizzBuzzRequest{Int1: 3, Int2: 5, Limit: 15, Str1: "fizz", Str2: "buzz"}
+	other := fizzBuzzRequest{Int1: 2, Int2: 7, Limit: 10, Str1: "a", Str2: "b"}
+
+	var wg sync.WaitGroup
+	for range 100 {
+		wg.Add(2)
+
+		go func() {
+			defer wg.Done()
+
+			mc.record(popular)
+		}()
+
+		go func() {
+			defer wg.Done()
+
+			mc.record(other)
+			mc.record(popular) // popular gets twice the hits of other
+		}()
+	}
+
+	wg.Wait()
+
+	req, hits, ok := mc.top()
+	check := assert.New(t)
+	check.True(ok)
+	check.Equal(popular, req)
+	check.Equal(uint(200), hits)
 }
 
 // =====================================================================================================================

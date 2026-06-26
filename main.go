@@ -4,12 +4,10 @@ package main
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
-	"sort"
 	"strconv"
 	"syscall"
 	"time"
@@ -21,18 +19,21 @@ import (
 
 type (
 	fizzBuzzRequest struct {
-		Str1  string `query:"str1" validate:"required"`
-		Str2  string `query:"str2" validate:"required"`
-		Int1  uint   `query:"int1" validate:"required"`
-		Int2  uint   `query:"int2" validate:"required"`
-		Limit uint   `query:"limit" validate:"required"`
+		Str1  string `json:"str1"  query:"str1"  validate:"required"`
+		Str2  string `json:"str2"  query:"str2"  validate:"required"`
+		Int1  uint   `json:"int1"  query:"int1"  validate:"required"`
+		Int2  uint   `json:"int2"  query:"int2"  validate:"required"`
+		Limit uint   `json:"limit" query:"limit" validate:"required"`
 	}
 	fizzBuzzResponse []string
-)
 
-func (fr fizzBuzzRequest) String() string {
-	return fmt.Sprintf("int1:%d_int2:%d_limit:%d_str1:%s_str2:%s", fr.Int1, fr.Int2, fr.Limit, fr.Str1, fr.Str2)
-}
+	// statsResponse is the payload of the statistics endpoint: the parameters of
+	// the most frequently requested fizz-buzz call and how many times it was made.
+	statsResponse struct {
+		RequestParams fizzBuzzRequest `json:"request_params"`
+		Hits          uint            `json:"nb_hits"`
+	}
+)
 
 type customValidator struct {
 	validator *validator.Validate
@@ -56,12 +57,14 @@ const (
 )
 
 func main() {
-	e := getHTTPServer()
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
+
+	e := getHTTPServer(logger)
 
 	// Cancel the start context on SIGINT/SIGTERM so StartConfig performs a graceful shutdown.
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 
-	e.Logger.Info("starting server", "address", listenAddress)
+	logger.Info("starting server", "address", listenAddress)
 
 	sc := echo.StartConfig{Address: listenAddress, GracefulTimeout: shutdownTimeout}
 
@@ -71,16 +74,14 @@ func main() {
 	stop()
 
 	if err != nil && !errors.Is(err, http.ErrServerClosed) {
-		e.Logger.Error("server terminated unexpectedly", "error", err)
+		logger.Error("server terminated unexpectedly", "error", err)
 		os.Exit(1)
 	}
 
-	e.Logger.Info("server stopped gracefully")
+	logger.Info("server stopped gracefully")
 }
 
-func getHTTPServer() *echo.Echo {
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
-
+func getHTTPServer(logger *slog.Logger) *echo.Echo {
 	e := echo.New()
 	e.Logger = logger // echo v5 logs through slog natively
 	e.Validator = &customValidator{validator: validator.New()}
@@ -96,15 +97,17 @@ func getHTTPServer() *echo.Echo {
 	e.Use(middleware.RateLimiter(middleware.NewRateLimiterMemoryStore(rateLimit))) // throttle per client IP
 	e.Use(middleware.ContextTimeout(requestTimeout))                               // bound handler execution time
 
-	metricsCollector := &metricsCollector{}
+	stats := newMetricsCollector()
 
-	e.GET("/fizz-buzz", fizzBuzzHandler(metricsCollector)) // parameters passed as query string
-	e.GET("/metrics", metricsHandler(metricsCollector))
+	e.GET("/fizz-buzz", fizzBuzzHandler(stats)) // parameters passed as query string
+	e.GET("/metrics", metricsHandler(stats))
 
 	return e
 }
 
-// requestLogger bridges echo's RequestLogger middleware to the application slog logger.
+// requestLogger bridges echo's RequestLogger middleware to the application slog
+// logger. It logs one structured line per request and escalates the level for
+// failures (4xx -> warn, 5xx -> error), attaching the error when present.
 func requestLogger(logger *slog.Logger) echo.MiddlewareFunc {
 	return middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
 		LogMethod:    true,
@@ -121,15 +124,21 @@ func requestLogger(logger *slog.Logger) echo.MiddlewareFunc {
 				slog.Duration("latency", v.Latency),
 				slog.String("request_id", v.RequestID),
 			}
-			ctx := c.Request().Context()
+
+			level := slog.LevelInfo
+			msg := "request handled"
 
 			if v.Error != nil {
-				logger.LogAttrs(ctx, slog.LevelError, "request failed", append(attrs, slog.String("error", v.Error.Error()))...)
+				attrs = append(attrs, slog.String("error", v.Error.Error()))
+				msg = "request failed"
+				level = slog.LevelWarn
 
-				return nil //nolint:nilerr // v.Error is the request's error being logged, not a failure of this logger
+				if v.Status >= http.StatusInternalServerError {
+					level = slog.LevelError
+				}
 			}
 
-			logger.LogAttrs(ctx, slog.LevelInfo, "request handled", attrs...)
+			logger.LogAttrs(c.Request().Context(), level, msg, attrs...)
 
 			return nil
 		},
@@ -140,39 +149,35 @@ func requestLogger(logger *slog.Logger) echo.MiddlewareFunc {
 // ============================================================ HANDLERS ===============================================
 // =====================================================================================================================
 
-func metricsHandler(mc *metricsCollector) echo.HandlerFunc {
+func metricsHandler(stats *metricsCollector) echo.HandlerFunc {
 	return func(c *echo.Context) error {
-		if mc == nil || mc.RequestCounters == nil {
+		req, hits, ok := stats.top()
+		if !ok {
 			return c.JSON(http.StatusOK, "no data collected yet")
 		}
 
-		sort.Sort(mc.RequestCounters)
-
-		return c.JSON(http.StatusOK, mc.RequestCounters)
+		return c.JSON(http.StatusOK, statsResponse{RequestParams: req, Hits: hits})
 	}
 }
 
-func fizzBuzzHandler(mc *metricsCollector) echo.HandlerFunc {
+func fizzBuzzHandler(stats *metricsCollector) echo.HandlerFunc {
 	return func(c *echo.Context) error {
-		// bind HTTP request (JSON) to fizzBuzzRequest
+		// bind query parameters into fizzBuzzRequest
 		req := new(fizzBuzzRequest)
 
 		err := c.Bind(req)
 		if err != nil {
-			return c.JSON(http.StatusBadRequest, err.Error())
+			// return the error so it flows through the error handler and is logged
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
 
 		err = c.Validate(req)
 		if err != nil {
-			return c.JSON(http.StatusBadRequest, err.Error())
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
 
-		// increment request counter metric
-		if mc != nil {
-			mc.IncRequestCounter(req.String())
-		}
+		stats.record(*req)
 
-		// call fizzbuzz controller and transform the response into an HTTP JSON response
 		return c.JSON(http.StatusOK, fizzBuzzController(req))
 	}
 }

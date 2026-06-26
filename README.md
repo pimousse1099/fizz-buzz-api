@@ -83,13 +83,17 @@ Both snippets return the following response body:
 
 ## metrics and logs
 
-Request counters are exposed on `GET /metrics` as a JSON array of objects
-`{"request_params": "...", "nb_hits": N}` sorted by hit count descending. This is custom JSON and
-**not** Prometheus exposition format despite the conventional path name — see the limitations below.
+`GET /metrics` returns the statistics for the **most frequently requested** fizz-buzz call: its
+parameters and how many times it was made, as `{"request_params": { ... }, "nb_hits": N}` (or the
+string `"no data collected yet"` until a request has been served). The counters are kept in a
+mutex-guarded map keyed by the request parameters, so the endpoint is safe under concurrency. This
+is custom JSON and **not** Prometheus exposition format despite the conventional path name — see the
+limitations below.
 
 Logs are structured JSON (`log/slog`) written to stdout, one line per request carrying `method`,
 `uri`, `status`, `latency` and a correlation `request_id` (also returned as the `X-Request-ID`
-response header). A sidecar (fluentd, filebeat, ...) is the suggested way to ship them into a log
+response header). Failures are escalated by status (4xx logged at `WARN`, 5xx at `ERROR`) with the
+error attached. A sidecar (fluentd, filebeat, ...) is the suggested way to ship the logs into a log
 service (graylog, logstash, ...).
 
 ## CI/CD
@@ -110,28 +114,24 @@ not `EXPOSE` a port — the operator provides everything at runtime.
 
 This is the **simple** implementation: deliberately flat and minimal. The gaps below are inherent
 trade-offs of that choice, documented so they are explicit. A fully hardened, layered (hexagonal)
-design — with bounded inputs, a mutex-safe and swappable stats store, env-based config,
-health/readiness probes, distributed tracing and graceful shutdown — lives on the
-`clean-archi-2026` branch.
+design — with bounded inputs, a swappable persistent stats store, env-based config, and
+health/readiness probes and distributed tracing — lives on the `clean-archi-2026` branch.
 
 ### Production-readiness
 
 | # | Gap | Impact |
 |---|-----|--------|
 | 1 | **`limit` is unbounded** — the response slice is sized directly from `limit` (a `uint`) | A single very large `limit` allocates a correspondingly huge slice → memory exhaustion / DoS. No upper bound, pagination or streaming. The 1 MiB body cap does not constrain a query-string `limit`. |
-| 2 | **Data races in the stats collector** — `IncRequestCounter` ranges over the slice outside the mutex, and the `/metrics` handler calls `sort.Sort` (in-place) on the shared slice with no lock | Under real concurrency this can corrupt counts or crash. The tests don't exercise concurrency, so `-race` stays green — a false sense of safety. |
-| 3 | **Unbounded stats growth** — every distinct parameter tuple appends an entry that is never evicted, looked up via an O(n) linear scan | High-cardinality clients drive memory growth and latency degradation over time. |
-| 4 | **Hardcoded configuration** — the listen address is `:8080` with no environment-variable configuration | Conflicts with 12-factor config; the port cannot change and multiple instances cannot run without recompiling. |
-| 5 | **No health / readiness probes** | Orchestrators (Kubernetes, ECS) cannot gauge liveness or readiness. |
-| 6 | **Limited observability** — structured slog request logs with a correlation id are emitted, but there is no distributed tracing and `/metrics` is custom JSON, not Prometheus exposition format | Per-request latency/errors are visible in logs, but there is no trace-level insight and `/metrics` won't scrape despite its name. |
-| 7 | **Stats are per-instance and in-memory** | Behind a load balancer the "most frequent request" is per-replica and incorrect overall, and all counts are lost on restart. |
+| 2 | **Unbounded stats growth** — the stats map keeps one entry per distinct parameter tuple, never evicted, and `/metrics` scans it in O(n) | High-cardinality clients drive memory growth, and the statistics scan slows as the key space grows. |
+| 3 | **Hardcoded configuration** — the listen address is `:8080` with no environment-variable configuration | Conflicts with 12-factor config; the port cannot change and multiple instances cannot run without recompiling. |
+| 4 | **No health / readiness probes** | Orchestrators (Kubernetes, ECS) cannot gauge liveness or readiness. |
+| 5 | **Limited observability** — structured slog request logs with a correlation id are emitted, but there is no distributed tracing and `/metrics` is custom JSON, not Prometheus exposition format | Per-request latency/errors are visible in logs, but there is no trace-level insight and `/metrics` won't scrape despite its name. |
+| 6 | **Stats are per-instance and in-memory** | Behind a load balancer the "most frequent request" is per-replica and incorrect overall, and all counts are lost on restart. |
 
 ### Maintainability
 
 | # | Gap | Impact |
 |---|-----|--------|
 | 1 | **No layering** — HTTP wiring, validation, domain logic and the stats store all live in a single flat `main` package | Hard to unit-test in isolation and hard to swap implementations (e.g. a Redis-backed store). |
-| 2 | **Stringly-typed stats key** — stats are keyed by `fizzBuzzRequest.String()` (`"int1:3_int2:4_..."`) | Fragile (a format tweak silently breaks aggregation); the endpoint returns an opaque string instead of structured parameters. |
-| 3 | **`/metrics` naming collision** — conventionally Prometheus, here domain counters | Confusing for operators and scraping tooling. |
-| 4 | **Brittle tests** — the integration tests assert on exact validator error strings | Breaks across library versions. |
-| 5 | **Bonus stats only partially met** — the spec asks for the parameters of the *single* most-frequent call plus its hit count; `/metrics` instead dumps every entry keyed by an opaque string | Diverges from the requested contract. |
+| 2 | **`/metrics` naming collision** — conventionally Prometheus, here domain statistics | Confusing for operators and scraping tooling. |
+| 3 | **Brittle tests** — the integration tests assert on exact validator error strings | Breaks across library versions. |
