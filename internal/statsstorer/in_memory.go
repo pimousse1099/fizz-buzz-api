@@ -13,19 +13,19 @@ import (
 // as the map key (all of its fields are comparable).
 type InMemory struct {
 	mu      sync.Mutex
-	counts  map[domain.Request]uint
-	topReq  domain.Request
+	counts  map[domain.GenerateFizzBuzzRequest]uint
+	topReq  domain.GenerateFizzBuzzRequest
 	topHits uint
 }
 
 // NewInMemory returns a ready-to-use in-memory store.
 func NewInMemory() *InMemory {
-	return &InMemory{counts: make(map[domain.Request]uint)}
+	return &InMemory{counts: make(map[domain.GenerateFizzBuzzRequest]uint)}
 }
 
 // Record increments the counter for req and updates the running most-frequent
 // request. Both this and TopHits are O(1) — no scan or sort.
-func (s *InMemory) Record(req domain.Request) {
+func (s *InMemory) Record(req domain.GenerateFizzBuzzRequest) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -39,7 +39,7 @@ func (s *InMemory) Record(req domain.Request) {
 
 // TopHits returns the most frequently requested parameters and its hit count. ok
 // is false when no request has been recorded yet.
-func (s *InMemory) TopHits() (req domain.Request, hits uint, ok bool) {
+func (s *InMemory) TopHits() (req domain.GenerateFizzBuzzRequest, hits uint, ok bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 

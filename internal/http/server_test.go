@@ -49,7 +49,7 @@ func TestFizzBuzzWithMissingParams(t *testing.T) {
 	check := assert.New(t)
 	check.Equal(http.StatusBadRequest, response.Code)
 	check.Equal(echo.MIMEApplicationJSON, response.Header().Get(echo.HeaderContentType))
-	check.JSONEq(`{"message":"Key: 'Request.Str2' Error:Field validation for 'Str2' failed on the 'required' tag"}`, response.Body.String())
+	check.JSONEq(`{"message":"Key: 'GenerateFizzBuzzRequest.Str2' Error:Field validation for 'Str2' failed on the 'required' tag"}`, response.Body.String())
 }
 
 func TestTopHitsStats(t *testing.T) {

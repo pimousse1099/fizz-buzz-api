@@ -34,8 +34,8 @@ const (
 
 // StatsStorer records fizz-buzz requests and reports the most frequent one.
 type StatsStorer interface {
-	Record(req domain.Request)
-	TopHits() (req domain.Request, hits uint, ok bool)
+	Record(req domain.GenerateFizzBuzzRequest)
+	TopHits() (req domain.GenerateFizzBuzzRequest, hits uint, ok bool)
 }
 
 // New builds the echo server with its middlewares and routes wired.

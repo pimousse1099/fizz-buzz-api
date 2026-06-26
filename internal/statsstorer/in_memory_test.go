@@ -21,8 +21,8 @@ func TestInMemoryConcurrent(t *testing.T) {
 	t.Parallel()
 
 	store := statsstorer.NewInMemory()
-	popular := domain.Request{Int1: 3, Int2: 5, Limit: 15, Str1: "fizz", Str2: "buzz"}
-	other := domain.Request{Int1: 2, Int2: 7, Limit: 10, Str1: "a", Str2: "b"}
+	popular := domain.GenerateFizzBuzzRequest{Int1: 3, Int2: 5, Limit: 15, Str1: "fizz", Str2: "buzz"}
+	other := domain.GenerateFizzBuzzRequest{Int1: 2, Int2: 7, Limit: 10, Str1: "a", Str2: "b"}
 
 	var wg sync.WaitGroup
 	for range 100 {
