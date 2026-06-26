@@ -85,8 +85,8 @@ Both snippets return the following response body:
 ## metrics and logs
 
 `GET /metrics/top-hits` returns the statistics for the **most frequently requested** fizz-buzz call:
-its parameters and how many times it was made, as `{"request_params": { ... }, "nb_hits": N}` (or the
-string `"no data collected yet"` until a request has been served). The counters are kept in a
+its parameters and how many times it was made, as `{"request_params": { ... }, "nb_hits": N}`
+(`nb_hits` is `0` with zero-valued params until a request has been served). The counters are kept in a
 mutex-guarded map keyed by the request parameters, so the endpoint is safe under concurrency. This is
 custom JSON and **not** Prometheus exposition format — see the limitations below.
 

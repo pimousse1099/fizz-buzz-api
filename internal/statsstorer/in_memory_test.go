@@ -1,6 +1,7 @@
 package statsstorer_test
 
 import (
+	"context"
 	"sync"
 	"testing"
 
@@ -13,8 +14,11 @@ import (
 func TestInMemoryEmpty(t *testing.T) {
 	t.Parallel()
 
-	_, _, ok := statsstorer.NewInMemory().GetFizzBuzzTopHits()
-	assert.False(t, ok)
+	resp, err := statsstorer.NewInMemory().GetFizzBuzzTopHits(context.Background())
+
+	check := assert.New(t)
+	check.NoError(err)
+	check.Zero(resp.Hits)
 }
 
 func TestInMemoryConcurrent(t *testing.T) {
@@ -31,22 +35,22 @@ func TestInMemoryConcurrent(t *testing.T) {
 		go func() {
 			defer wg.Done()
 
-			store.RecordFizzBuzzRequestHit(popular)
+			_ = store.RecordFizzBuzzRequestHit(context.Background(), popular)
 		}()
 
 		go func() {
 			defer wg.Done()
 
-			store.RecordFizzBuzzRequestHit(other)
-			store.RecordFizzBuzzRequestHit(popular) // popular gets twice the hits of other
+			_ = store.RecordFizzBuzzRequestHit(context.Background(), other)
+			_ = store.RecordFizzBuzzRequestHit(context.Background(), popular) // popular gets twice the hits of other
 		}()
 	}
 
 	wg.Wait()
 
-	req, hits, ok := store.GetFizzBuzzTopHits()
+	resp, err := store.GetFizzBuzzTopHits(context.Background())
 	check := assert.New(t)
-	check.True(ok)
-	check.Equal(popular, req)
-	check.Equal(uint(200), hits)
+	check.NoError(err)
+	check.Equal(popular, resp.RequestParams)
+	check.Equal(uint(200), resp.Hits)
 }

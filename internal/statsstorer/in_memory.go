@@ -2,6 +2,7 @@
 package statsstorer
 
 import (
+	"context"
 	"sync"
 
 	"github.com/pimousse1099/fizz-buzz-api/internal/domain"
@@ -24,8 +25,10 @@ func NewInMemory() *InMemory {
 }
 
 // RecordFizzBuzzRequestHit increments the counter for req and updates the running
-// most-frequent request. Both this and GetFizzBuzzTopHits are O(1) — no scan or sort.
-func (s *InMemory) RecordFizzBuzzRequestHit(req domain.GenerateFizzBuzzRequest) {
+// most-frequent request. Both this and GetFizzBuzzTopHits are O(1) — no scan or
+// sort. The in-memory store never fails, so it always returns a nil error; ctx is
+// unused but kept for parity with fail-able implementations (e.g. Redis).
+func (s *InMemory) RecordFizzBuzzRequestHit(_ context.Context, req domain.GenerateFizzBuzzRequest) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -35,13 +38,16 @@ func (s *InMemory) RecordFizzBuzzRequestHit(req domain.GenerateFizzBuzzRequest) 
 		s.topReq = req
 		s.topHits = s.counts[req]
 	}
+
+	return nil
 }
 
 // GetFizzBuzzTopHits returns the most frequently requested parameters and its hit
-// count. ok is false when no request has been recorded yet.
-func (s *InMemory) GetFizzBuzzTopHits() (req domain.GenerateFizzBuzzRequest, hits uint, ok bool) {
+// count. When no request has been recorded yet it returns the zero response
+// (Hits == 0).
+func (s *InMemory) GetFizzBuzzTopHits(_ context.Context) (domain.GetFizzBuzzTopHitsResponse, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	return s.topReq, s.topHits, s.topHits > 0
+	return domain.GetFizzBuzzTopHitsResponse{RequestParams: s.topReq, Hits: s.topHits}, nil
 }
