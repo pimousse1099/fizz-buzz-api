@@ -17,6 +17,19 @@ import (
 	"github.com/labstack/echo/v5/middleware"
 )
 
+const (
+	listenAddress = ":8080"
+
+	// maxRequestBody caps the accepted request body size.
+	maxRequestBody = 1 << 20 // 1 MiB
+	// rateLimit is the per-client request rate (requests/second).
+	rateLimit = 20
+	// requestTimeout bounds the time spent in the handler chain.
+	requestTimeout = 10 * time.Second
+	// shutdownTimeout bounds how long graceful shutdown waits for in-flight requests.
+	shutdownTimeout = 10 * time.Second
+)
+
 type (
 	fizzBuzzRequest struct {
 		Str1  string `json:"str1"  query:"str1"  validate:"required"`
@@ -35,19 +48,6 @@ type (
 	}
 )
 
-const (
-	listenAddress = ":8080"
-
-	// maxRequestBody caps the accepted request body size.
-	maxRequestBody = 1 << 20 // 1 MiB
-	// rateLimit is the per-client request rate (requests/second).
-	rateLimit = 20
-	// requestTimeout bounds the time spent in the handler chain.
-	requestTimeout = 10 * time.Second
-	// shutdownTimeout bounds how long graceful shutdown waits for in-flight requests.
-	shutdownTimeout = 10 * time.Second
-)
-
 func main() {
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
 	validate := validator.New()
@@ -57,19 +57,17 @@ func main() {
 
 	// Cancel the start context on SIGINT/SIGTERM so StartConfig performs a graceful shutdown.
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
 
 	logger.Info("starting server", "address", listenAddress)
 
 	sc := echo.StartConfig{Address: listenAddress, GracefulTimeout: shutdownTimeout}
 
 	err := sc.Start(ctx, e)
-
-	// release the signal handler now that the server has returned
-	stop()
-
 	if err != nil && !errors.Is(err, http.ErrServerClosed) {
+		// stop() is deferred; it only releases signal handlers, which is moot here.
 		logger.Error("server terminated unexpectedly", "error", err)
-		os.Exit(1)
+		os.Exit(1) //nolint:gocritic // exit is intentional on fatal startup error
 	}
 
 	logger.Info("server stopped gracefully")
