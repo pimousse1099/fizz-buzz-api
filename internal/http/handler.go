@@ -38,6 +38,8 @@ func fizzBuzzHandler(validate *validator.Validate, store StatsStorer) echo.Handl
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
 
+		resp := domain.GenerateFizzBuzz(*req)
+
 		ctx := c.Request().Context()
 
 		// best-effort: a stats failure must not fail the user's request
@@ -46,7 +48,7 @@ func fizzBuzzHandler(validate *validator.Validate, store StatsStorer) echo.Handl
 			c.Logger().WarnContext(ctx, "failed to record fizzbuzz request hit", "error", err)
 		}
 
-		return c.JSON(http.StatusOK, domain.Generate(*req))
+		return c.JSON(http.StatusOK, resp)
 	}
 }
 

@@ -27,11 +27,11 @@ type (
 	}
 )
 
-// Generate builds the fizz-buzz response for req: multiples of Int1 become Str1,
-// multiples of Int2 become Str2, multiples of both become Str1+Str2, and every
-// other number is itself. Int1 and Int2 are assumed non-zero (enforced by
+// GenerateFizzBuzz builds the fizz-buzz response for req: multiples of Int1 become
+// Str1, multiples of Int2 become Str2, multiples of both become Str1+Str2, and
+// every other number is itself. Int1 and Int2 are assumed non-zero (enforced by
 // validation before this is called).
-func Generate(req GenerateFizzBuzzRequest) GenerateFizzBuzzResponse {
+func GenerateFizzBuzz(req GenerateFizzBuzzRequest) GenerateFizzBuzzResponse {
 	resp := make(GenerateFizzBuzzResponse, req.Limit)
 
 	for i := uint(1); i <= req.Limit; i++ {

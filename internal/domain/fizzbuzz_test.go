@@ -51,7 +51,7 @@ func TestGenerate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			actual := domain.Generate(tt.request)
+			actual := domain.GenerateFizzBuzz(tt.request)
 			assert.Equal(t, tt.expected, actual)
 			assert.Len(t, actual, int(tt.request.Limit))
 		})
