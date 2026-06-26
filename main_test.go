@@ -25,7 +25,7 @@ func TestMainWithJSONRequest(t *testing.T) {
 
 	check := assert.New(t)
 	check.Equal(http.StatusOK, response.Code, response.Body.String())
-	check.Equal(echo.MIMEApplicationJSONCharsetUTF8, response.Header().Get(echo.HeaderContentType), response.Body.String())
+	check.Equal(echo.MIMEApplicationJSON, response.Header().Get(echo.HeaderContentType), response.Body.String())
 	check.JSONEq(`["1","fizz","buzz","fizz","5","fizzbuzz","7","fizz","buzz","fizz"]`, response.Body.String())
 }
 
@@ -39,7 +39,7 @@ func TestMainWithJSONRequestAndMissingParams(t *testing.T) {
 
 	check := assert.New(t)
 	check.Equal(http.StatusBadRequest, response.Code)
-	check.Equal(echo.MIMEApplicationJSONCharsetUTF8, response.Header().Get(echo.HeaderContentType))
+	check.Equal(echo.MIMEApplicationJSON, response.Header().Get(echo.HeaderContentType))
 	check.JSONEq(`"Key: 'fizzBuzzRequest.Str2' Error:Field validation for 'Str2' failed on the 'required' tag"`, response.Body.String())
 }
 
@@ -54,7 +54,7 @@ func TestMainWithInvalidContentType(t *testing.T) {
 
 	check := assert.New(t)
 	check.Equal(http.StatusBadRequest, response.Code)
-	check.Equal(echo.MIMEApplicationJSONCharsetUTF8, response.Header().Get(echo.HeaderContentType))
+	check.Equal(echo.MIMEApplicationJSON, response.Header().Get(echo.HeaderContentType))
 	check.JSONEq(`"This API only allows 'application/json' requests (provided: multipart/form-data)."`, response.Body.String())
 }
 
