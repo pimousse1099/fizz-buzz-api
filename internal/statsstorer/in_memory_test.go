@@ -13,7 +13,7 @@ import (
 func TestInMemoryEmpty(t *testing.T) {
 	t.Parallel()
 
-	_, _, ok := statsstorer.NewInMemory().TopHits()
+	_, _, ok := statsstorer.NewInMemory().GetFizzBuzzTopHits()
 	assert.False(t, ok)
 }
 
@@ -31,20 +31,20 @@ func TestInMemoryConcurrent(t *testing.T) {
 		go func() {
 			defer wg.Done()
 
-			store.Record(popular)
+			store.RecordFizzBuzzRequestHit(popular)
 		}()
 
 		go func() {
 			defer wg.Done()
 
-			store.Record(other)
-			store.Record(popular) // popular gets twice the hits of other
+			store.RecordFizzBuzzRequestHit(other)
+			store.RecordFizzBuzzRequestHit(popular) // popular gets twice the hits of other
 		}()
 	}
 
 	wg.Wait()
 
-	req, hits, ok := store.TopHits()
+	req, hits, ok := store.GetFizzBuzzTopHits()
 	check := assert.New(t)
 	check.True(ok)
 	check.Equal(popular, req)

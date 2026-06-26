@@ -23,9 +23,9 @@ func NewInMemory() *InMemory {
 	return &InMemory{counts: make(map[domain.GenerateFizzBuzzRequest]uint)}
 }
 
-// Record increments the counter for req and updates the running most-frequent
-// request. Both this and TopHits are O(1) — no scan or sort.
-func (s *InMemory) Record(req domain.GenerateFizzBuzzRequest) {
+// RecordFizzBuzzRequestHit increments the counter for req and updates the running
+// most-frequent request. Both this and GetFizzBuzzTopHits are O(1) — no scan or sort.
+func (s *InMemory) RecordFizzBuzzRequestHit(req domain.GenerateFizzBuzzRequest) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -37,9 +37,9 @@ func (s *InMemory) Record(req domain.GenerateFizzBuzzRequest) {
 	}
 }
 
-// TopHits returns the most frequently requested parameters and its hit count. ok
-// is false when no request has been recorded yet.
-func (s *InMemory) TopHits() (req domain.GenerateFizzBuzzRequest, hits uint, ok bool) {
+// GetFizzBuzzTopHits returns the most frequently requested parameters and its hit
+// count. ok is false when no request has been recorded yet.
+func (s *InMemory) GetFizzBuzzTopHits() (req domain.GenerateFizzBuzzRequest, hits uint, ok bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 

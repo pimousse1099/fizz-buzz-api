@@ -11,8 +11,6 @@ import (
 
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v5"
-
-	"github.com/pimousse1099/fizz-buzz-api/internal/domain"
 )
 
 const (
@@ -31,12 +29,6 @@ const (
 	routeFizzBuzz     = "/fizz-buzz"
 	routeTopHitsStats = "/metrics/top-hits"
 )
-
-// StatsStorer records fizz-buzz requests and reports the most frequent one.
-type StatsStorer interface {
-	Record(req domain.GenerateFizzBuzzRequest)
-	TopHits() (req domain.GenerateFizzBuzzRequest, hits uint, ok bool)
-}
 
 // New builds the echo server with its middlewares and routes wired.
 func New(logger *slog.Logger, validate *validator.Validate, store StatsStorer) *echo.Echo {

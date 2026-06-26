@@ -9,6 +9,13 @@ import (
 	"github.com/pimousse1099/fizz-buzz-api/internal/domain"
 )
 
+// StatsStorer records fizz-buzz requests and reports the most frequent one. It is
+// defined here, on the consumer side, since the handlers are its only users.
+type StatsStorer interface {
+	RecordFizzBuzzRequestHit(req domain.GenerateFizzBuzzRequest)
+	GetFizzBuzzTopHits() (req domain.GenerateFizzBuzzRequest, hits uint, ok bool)
+}
+
 func fizzBuzzHandler(validate *validator.Validate, store StatsStorer) echo.HandlerFunc {
 	return func(c *echo.Context) error {
 		// bind query parameters into the request
@@ -25,7 +32,7 @@ func fizzBuzzHandler(validate *validator.Validate, store StatsStorer) echo.Handl
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
 
-		store.Record(*req)
+		store.RecordFizzBuzzRequestHit(*req)
 
 		return c.JSON(http.StatusOK, domain.Generate(*req))
 	}
@@ -33,7 +40,7 @@ func fizzBuzzHandler(validate *validator.Validate, store StatsStorer) echo.Handl
 
 func topHitsHandler(store StatsStorer) echo.HandlerFunc {
 	return func(c *echo.Context) error {
-		req, hits, ok := store.TopHits()
+		req, hits, ok := store.GetFizzBuzzTopHits()
 		if !ok {
 			return c.JSON(http.StatusOK, "no data collected yet")
 		}
