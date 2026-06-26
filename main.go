@@ -56,33 +56,26 @@ const (
 )
 
 func main() {
-	err := run()
-	if err != nil {
-		os.Exit(1)
-	}
-}
-
-func run() error {
 	e := getHTTPServer()
 
 	// Cancel the start context on SIGINT/SIGTERM so StartConfig performs a graceful shutdown.
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
 
 	e.Logger.Info("starting server", "address", listenAddress)
 
 	sc := echo.StartConfig{Address: listenAddress, GracefulTimeout: shutdownTimeout}
 
 	err := sc.Start(ctx, e)
+
+	// release the signal handler now that the server has returned
+	stop()
+
 	if err != nil && !errors.Is(err, http.ErrServerClosed) {
 		e.Logger.Error("server terminated unexpectedly", "error", err)
-
-		return err
+		os.Exit(1)
 	}
 
 	e.Logger.Info("server stopped gracefully")
-
-	return nil
 }
 
 func getHTTPServer() *echo.Echo {
