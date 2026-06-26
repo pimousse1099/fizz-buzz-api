@@ -5,6 +5,7 @@ go 1.26
 require (
 	github.com/go-playground/validator/v10 v10.30.3
 	github.com/labstack/echo/v5 v5.2.1
+	github.com/sethvargo/go-envconfig v1.3.0
 	github.com/stretchr/testify v1.11.1
 	github.com/veqryn/slog-context v0.9.0
 )

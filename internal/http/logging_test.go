@@ -40,7 +40,7 @@ func TestRecordFailureLogIsRequestCorrelated(t *testing.T) {
 	var buf bytes.Buffer
 
 	logger := slog.New(slogctx.NewHandler(slog.NewJSONHandler(&buf, nil), nil))
-	e := httpserver.New(logger, validator.New(), failingStore{})
+	e := httpserver.New(logger, validator.New(), failingStore{}, testHTTPConfig(), testMaxLimit)
 
 	request := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/fizz-buzz?int1=2&int2=3&limit=10&str1=fizz&str2=buzz", http.NoBody)
 	response := httptest.NewRecorder()

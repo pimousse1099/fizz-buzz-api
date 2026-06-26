@@ -5,11 +5,12 @@ A straightforward REST API implementation of fizz-buzz.
 It is built on the [echo v5](https://echo.labstack.com/) web framework, so request binding,
 validation and HTTP middlewares come out of the box rather than being hand-rolled. Logging is
 structured JSON via the standard library [`log/slog`](https://pkg.go.dev/log/slog) (echo v5 logs
-through slog natively) and is written to stdout. The server listens on a fixed `:8080` (see
-limitations) and wires the following middleware stack (outermost first): `Recover`, `RequestID`, a
-slog-backed request logger, `Secure` (security headers), `CORS` (permissive, origin `*`), `Gzip`,
-`BodyLimit` (1 MiB), a per-IP `RateLimiter` (20 req/s) and a per-request `ContextTimeout` (10s).
-Shutdown is graceful: `SIGINT`/`SIGTERM` drains in-flight requests (10s budget) before exiting.
+through slog natively) and is written to stdout. The server is configured from the environment (see
+[configuration](#configuration)) and wires the following middleware stack (outermost first):
+`Recover`, `RequestID`, a slog-backed request logger, `Secure` (security headers), `CORS`
+(permissive, origin `*`), `Gzip`, `BodyLimit` (1 MiB by default), a per-IP `RateLimiter` (20 req/s by
+default) and a per-request `ContextTimeout` (10s by default). Shutdown is graceful: `SIGINT`/`SIGTERM`
+drains in-flight requests (10s budget by default) before exiting.
 
 The codebase targets Go 1.26 and is organised into small, single-responsibility packages (see
 [project layout](#project-layout)).
@@ -19,7 +20,9 @@ The codebase targets Go 1.26 and is organised into small, single-responsibility 
 ### prod
 
 ```sh
-docker run --rm -p 8080:8080 pimousse1099/fizz-buzz-api-go:v0.1.0
+docker run --rm -p 8080:8080 \
+  -e HTTP_ADDR=:8080 -e LOG_LEVEL=info -e FIZZBUZZ_MAX_LIMIT=100000 \
+  pimousse1099/fizz-buzz-api-go:v0.1.0
 ```
 
 ### dev
@@ -27,8 +30,25 @@ docker run --rm -p 8080:8080 pimousse1099/fizz-buzz-api-go:v0.1.0
 ```sh
 make run
 # or
-go run ./cmd/fizz-buzz-api
+HTTP_ADDR=:8080 LOG_LEVEL=info FIZZBUZZ_MAX_LIMIT=100000 go run ./cmd/fizz-buzz-api
 ```
+
+## configuration
+
+Configuration is loaded from environment variables
+([`sethvargo/go-envconfig`](https://github.com/sethvargo/go-envconfig)), grouped by concern.
+**Required** variables have no default, so a missing value fails fast at startup rather than silently
+at runtime; operational knobs keep sensible defaults.
+
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| `HTTP_ADDR` | ✅ | — | Listen address, e.g. `:8080` |
+| `LOG_LEVEL` | ✅ | — | Log level: `debug` / `info` / `warn` / `error` |
+| `FIZZBUZZ_MAX_LIMIT` | ✅ | — | Inclusive upper bound for the `limit` query param; caps the generated sequence size |
+| `HTTP_RATE_LIMIT` | | `20` | Requests per second per client IP |
+| `HTTP_BODY_LIMIT` | | `1048576` | Max request body size, in bytes (1 MiB) |
+| `HTTP_REQUEST_TIMEOUT` | | `10s` | Per-request handler timeout |
+| `HTTP_SHUTDOWN_TIMEOUT` | | `10s` | Graceful-shutdown drain budget |
 
 ## example
 
@@ -118,7 +138,8 @@ not `EXPOSE` a port — the operator provides everything at runtime.
 ## project layout
 
 ```
-cmd/fizz-buzz-api/      composition root: builds dependencies, handles signals, runs the server
+cmd/fizz-buzz-api/      composition root: loads config, builds dependencies, handles signals, runs the server
+config/                environment-variable configuration, grouped by concern (HTTP/business/log)
 internal/
   domain/              fizz-buzz request/response types and the Generate logic (no transport/storage)
   http/                echo server setup, handlers, middlewares, and the StatsStorer interface
@@ -133,20 +154,22 @@ for a Redis-backed one) without touching the HTTP layer.
 ## limitations
 
 This is the **simple** implementation: small and intentionally lean. The gaps below are inherent
-trade-offs of that choice, documented so they are explicit. A fully hardened design — with bounded
-inputs, a persistent stats store, env-based config, health/readiness probes and distributed tracing —
-lives on the `clean-archi-2026` branch.
+trade-offs of that choice, documented so they are explicit. A fully hardened design — with a
+persistent stats store, health/readiness probes and distributed tracing — lives on the
+`clean-archi-2026` branch.
+
+The `limit` query param is bounded by `FIZZBUZZ_MAX_LIMIT` (see [configuration](#configuration)),
+so an oversized `limit` is rejected with `400` before any allocation — the operator picks the
+ceiling that fits the deployment's memory budget.
 
 ### Production-readiness
 
 | # | Gap | Impact |
 |---|-----|--------|
-| 1 | **`limit` is unbounded** — the response slice is sized directly from `limit` (a `uint`) | A single very large `limit` allocates a correspondingly huge slice → memory exhaustion / DoS. No upper bound, pagination or streaming. The 1 MiB body cap does not constrain a query-string `limit`. |
-| 2 | **Unbounded stats growth** — the stats map keeps one entry per distinct parameter tuple, never evicted (the most-frequent lookup itself is O(1)) | High-cardinality clients drive memory growth over time. |
-| 3 | **Hardcoded configuration** — the listen address is `:8080` with no environment-variable configuration | Conflicts with 12-factor config; the port cannot change and multiple instances cannot run without recompiling. |
-| 4 | **No health / readiness probes** | Orchestrators (Kubernetes, ECS) cannot gauge liveness or readiness. |
-| 5 | **Limited observability** — structured slog request logs with a correlation id are emitted, but there is no distributed tracing and statistics are custom JSON, not Prometheus exposition format | Per-request latency/errors are visible in logs, but there is no trace-level insight and the stats endpoint won't scrape. |
-| 6 | **Stats are per-instance and in-memory** | Behind a load balancer the "most frequent request" is per-replica and incorrect overall, and all counts are lost on restart. |
+| 1 | **Unbounded stats growth** — the stats map keeps one entry per distinct parameter tuple, never evicted (the most-frequent lookup itself is O(1)) | High-cardinality clients drive memory growth over time. |
+| 2 | **No health / readiness probes** | Orchestrators (Kubernetes, ECS) cannot gauge liveness or readiness. |
+| 3 | **Limited observability** — structured slog request logs with a correlation id are emitted, but there is no distributed tracing and statistics are custom JSON, not Prometheus exposition format | Per-request latency/errors are visible in logs, but there is no trace-level insight and the stats endpoint won't scrape. |
+| 4 | **Stats are per-instance and in-memory** | Behind a load balancer the "most frequent request" is per-replica and incorrect overall, and all counts are lost on restart. |
 
 ### Maintainability
 

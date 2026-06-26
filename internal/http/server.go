@@ -7,34 +7,23 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
-	"time"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v5"
+
+	"github.com/pimousse1099/fizz-buzz-api/config"
 )
 
-const (
-	// ListenAddress is the fixed address the server binds to.
-	ListenAddress = ":8080"
-
-	// maxRequestBody caps the accepted request body size.
-	maxRequestBody = 1 << 20 // 1 MiB
-	// rateLimit is the per-client request rate (requests/second).
-	rateLimit = 20
-	// requestTimeout bounds the time spent in the handler chain.
-	requestTimeout = 10 * time.Second
-	// shutdownTimeout bounds how long graceful shutdown waits for in-flight requests.
-	shutdownTimeout = 10 * time.Second
-)
-
-// New builds the echo server with its middlewares and routes wired.
-func New(logger *slog.Logger, validate *validator.Validate, store StatsStorer) *echo.Echo {
+// New builds the echo server with its middlewares and routes wired. It takes only
+// the configuration it needs: the HTTP/edge settings and the fizz-buzz `limit`
+// ceiling — not the whole Config.
+func New(logger *slog.Logger, validate *validator.Validate, store StatsStorer, httpCfg config.HTTP, maxLimit uint) *echo.Echo {
 	e := echo.New()
 	e.Logger = logger // echo v5 logs through slog natively
 
-	useMiddlewares(e)
+	useMiddlewares(e, httpCfg)
 
-	e.GET(fizzbuzzRoute, fizzBuzzHandler(validate, store)) // parameters passed as query string
+	e.GET(fizzbuzzRoute, fizzBuzzHandler(validate, store, maxLimit)) // parameters passed as query string
 	e.GET(topHitsRoute, topHitsHandler(store))
 
 	return e
@@ -42,8 +31,8 @@ func New(logger *slog.Logger, validate *validator.Validate, store StatsStorer) *
 
 // Run starts the server and blocks until ctx is canceled (SIGINT/SIGTERM),
 // performing a graceful shutdown. It returns nil on a clean shutdown.
-func Run(ctx context.Context, e *echo.Echo) error {
-	sc := echo.StartConfig{Address: ListenAddress, GracefulTimeout: shutdownTimeout}
+func Run(ctx context.Context, e *echo.Echo, httpCfg config.HTTP) error {
+	sc := echo.StartConfig{Address: httpCfg.Addr, GracefulTimeout: httpCfg.ShutdownTimeout}
 
 	err := sc.Start(ctx, e)
 	if err != nil && !errors.Is(err, http.ErrServerClosed) {

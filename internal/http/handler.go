@@ -2,6 +2,7 @@ package http
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"github.com/go-playground/validator/v10"
@@ -22,7 +23,7 @@ type StatsStorer interface {
 	GetFizzBuzzTopHits(ctx context.Context) (domain.GetFizzBuzzTopHitsResponse, error)
 }
 
-func fizzBuzzHandler(validate *validator.Validate, store StatsStorer) echo.HandlerFunc {
+func fizzBuzzHandler(validate *validator.Validate, store StatsStorer, maxLimit uint) echo.HandlerFunc {
 	return func(c *echo.Context) error {
 		// bind query parameters into the request
 		req := new(domain.GenerateFizzBuzzRequest)
@@ -36,6 +37,12 @@ func fizzBuzzHandler(validate *validator.Validate, store StatsStorer) echo.Handl
 		err = validate.Struct(req)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		}
+
+		// bound the sequence size: a huge limit would allocate a huge slice (DoS).
+		// The bound is inclusive, so limit == maxLimit is allowed.
+		if req.Limit > maxLimit {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("limit must not exceed %d", maxLimit))
 		}
 
 		resp := domain.GenerateFizzBuzz(*req)
