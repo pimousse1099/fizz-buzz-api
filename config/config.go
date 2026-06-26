@@ -36,13 +36,30 @@ type Env struct {
 }
 
 // HTTP holds the HTTP server and edge (rate-limit) configuration.
+//
+// The four timeouts cover different layers and are not interchangeable:
+//
+//   - ReadHeaderTimeout — connection-level: max time to read the request headers.
+//     The main guard against slowloris-style header stalls.
+//   - WriteTimeout — connection-level: deadline from the end of header read until
+//     the response write finishes. Protects the socket, but does NOT cancel the
+//     handler (the goroutine keeps running); keep it >= RequestTimeout.
+//   - IdleTimeout — connection-level: how long a kept-alive connection may sit
+//     idle between requests before being closed. Bounds idle conns, not handlers.
+//   - RequestTimeout — application-level (chi middleware.Timeout): per-request
+//     deadline that cancels the request context and returns 504 if a handler
+//     outlives it. Unlike WriteTimeout it propagates cancellation to ctx-aware
+//     work (e.g. a slow store call); keep it < WriteTimeout so the 504 is written
+//     before the socket write deadline trips.
 type HTTP struct {
-	Addr              string        `env:"ADDR,required"`                   // HTTP_ADDR
-	ReadHeaderTimeout time.Duration `env:"READ_HEADER_TIMEOUT,default=2s"`  // HTTP_READ_HEADER_TIMEOUT
-	WriteTimeout      time.Duration `env:"WRITE_TIMEOUT,default=10s"`       // HTTP_WRITE_TIMEOUT
-	IdleTimeout       time.Duration `env:"IDLE_TIMEOUT,default=120s"`       // HTTP_IDLE_TIMEOUT
-	RequestTimeout    time.Duration `env:"REQUEST_TIMEOUT,default=5s"`      // HTTP_REQUEST_TIMEOUT (per-request handler deadline)
-	RateLimitRequests int           `env:"RATE_LIMIT_REQUESTS,default=100"` // HTTP_RATE_LIMIT_REQUESTS
+	Addr string `env:"ADDR,required"` // HTTP_ADDR — listen address, e.g. ":8080"
+
+	ReadHeaderTimeout time.Duration `env:"READ_HEADER_TIMEOUT,default=2s"` // HTTP_READ_HEADER_TIMEOUT
+	WriteTimeout      time.Duration `env:"WRITE_TIMEOUT,default=10s"`      // HTTP_WRITE_TIMEOUT
+	IdleTimeout       time.Duration `env:"IDLE_TIMEOUT,default=120s"`      // HTTP_IDLE_TIMEOUT
+	RequestTimeout    time.Duration `env:"REQUEST_TIMEOUT,default=5s"`     // HTTP_REQUEST_TIMEOUT
+
+	RateLimitRequests int           `env:"RATE_LIMIT_REQUESTS,default=100"` // HTTP_RATE_LIMIT_REQUESTS — N requests per window, per client IP
 	RateLimitWindow   time.Duration `env:"RATE_LIMIT_WINDOW,default=1m"`    // HTTP_RATE_LIMIT_WINDOW
 }
 
