@@ -10,7 +10,6 @@ import (
 	"os/signal"
 	"sort"
 	"strconv"
-	"strings"
 	"syscall"
 	"time"
 
@@ -21,11 +20,11 @@ import (
 
 type (
 	fizzBuzzRequest struct {
-		Str1  string `json:"str1" validate:"required"`
-		Str2  string `json:"str2" validate:"required"`
-		Int1  uint   `json:"int1" validate:"required"`
-		Int2  uint   `json:"int2" validate:"required"`
-		Limit uint   `json:"limit" validate:"required"`
+		Str1  string `query:"str1" validate:"required"`
+		Str2  string `query:"str2" validate:"required"`
+		Int1  uint   `query:"int1" validate:"required"`
+		Int2  uint   `query:"int2" validate:"required"`
+		Limit uint   `query:"limit" validate:"required"`
 	}
 	fizzBuzzResponse []string
 )
@@ -95,7 +94,7 @@ func getHTTPServer() *echo.Echo {
 
 	metricsCollector := &metricsCollector{}
 
-	e.POST("/fizz-buzz", fizzBuzzHandler(metricsCollector), requestContentTypeFilterer()) // only allow 'application/json'
+	e.GET("/fizz-buzz", fizzBuzzHandler(metricsCollector)) // parameters passed as query string
 	e.GET("/metrics", metricsHandler(metricsCollector))
 
 	return e
@@ -127,26 +126,6 @@ func requestLogger(logger *slog.Logger) echo.MiddlewareFunc {
 			return nil
 		},
 	})
-}
-
-// =====================================================================================================================
-// ============================================================ MIDDLEWARES ============================================
-// =====================================================================================================================
-
-func requestContentTypeFilterer() echo.MiddlewareFunc {
-	return func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c *echo.Context) error {
-			// Match by prefix so "application/json; charset=UTF-8" is also accepted.
-			contentType := c.Request().Header.Get(echo.HeaderContentType)
-			if !strings.HasPrefix(contentType, echo.MIMEApplicationJSON) {
-				return c.JSON(
-					http.StatusBadRequest,
-					fmt.Sprintf(`This API only allows 'application/json' requests (provided: %s).`, contentType),
-				)
-			}
-			return next(c)
-		}
-	}
 }
 
 // =====================================================================================================================

@@ -1,8 +1,6 @@
 package main
 
 import (
-	"bytes"
-	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -15,11 +13,8 @@ import (
 // ============================================= INTEGRATION tests =====================================================
 // =====================================================================================================================
 
-func TestMainWithJSONRequest(t *testing.T) {
-	jsonReq, _ := json.Marshal(&fizzBuzzRequest{Str1: "fizz", Str2: "buzz", Int1: 2, Int2: 3, Limit: 10})
-	request := httptest.NewRequest(http.MethodPost, "/fizz-buzz", bytes.NewReader(jsonReq))
-	// charset suffix must still be accepted (filterer matches by prefix)
-	request.Header.Set(echo.HeaderContentType, "application/json; charset=UTF-8")
+func TestMainWithQueryParams(t *testing.T) {
+	request := httptest.NewRequest(http.MethodGet, "/fizz-buzz?int1=2&int2=3&limit=10&str1=fizz&str2=buzz", nil)
 	response := httptest.NewRecorder()
 
 	getHTTPServer().ServeHTTP(response, request)
@@ -30,10 +25,9 @@ func TestMainWithJSONRequest(t *testing.T) {
 	check.JSONEq(`["1","fizz","buzz","fizz","5","fizzbuzz","7","fizz","buzz","fizz"]`, response.Body.String())
 }
 
-func TestMainWithJSONRequestAndMissingParams(t *testing.T) {
-	jsonReq, _ := json.Marshal(&fizzBuzzRequest{Str1: "fizz", Int1: 2, Int2: 3, Limit: 20})
-	request := httptest.NewRequest(http.MethodPost, "/fizz-buzz", bytes.NewReader(jsonReq))
-	request.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+func TestMainWithMissingParams(t *testing.T) {
+	// str2 is missing -> validation must fail
+	request := httptest.NewRequest(http.MethodGet, "/fizz-buzz?int1=2&int2=3&limit=20&str1=fizz", nil)
 	response := httptest.NewRecorder()
 
 	getHTTPServer().ServeHTTP(response, request)
@@ -42,21 +36,6 @@ func TestMainWithJSONRequestAndMissingParams(t *testing.T) {
 	check.Equal(http.StatusBadRequest, response.Code)
 	check.Equal(echo.MIMEApplicationJSON, response.Header().Get(echo.HeaderContentType))
 	check.JSONEq(`"Key: 'fizzBuzzRequest.Str2' Error:Field validation for 'Str2' failed on the 'required' tag"`, response.Body.String())
-}
-
-func TestMainWithInvalidContentType(t *testing.T) {
-	jsonReq, _ := json.Marshal(&fizzBuzzRequest{})
-	request := httptest.NewRequest(http.MethodPost, "/fizz-buzz", bytes.NewReader(jsonReq))
-	// set invalid content-type header
-	request.Header.Set(echo.HeaderContentType, echo.MIMEMultipartForm)
-	response := httptest.NewRecorder()
-
-	getHTTPServer().ServeHTTP(response, request)
-
-	check := assert.New(t)
-	check.Equal(http.StatusBadRequest, response.Code)
-	check.Equal(echo.MIMEApplicationJSON, response.Header().Get(echo.HeaderContentType))
-	check.JSONEq(`"This API only allows 'application/json' requests (provided: multipart/form-data)."`, response.Body.String())
 }
 
 // =====================================================================================================================
