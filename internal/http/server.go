@@ -32,7 +32,7 @@ func New(logger *slog.Logger, validate *validator.Validate, store StatsStorer) *
 	e := echo.New()
 	e.Logger = logger // echo v5 logs through slog natively
 
-	useMiddlewares(e, logger)
+	useMiddlewares(e)
 
 	e.GET(fizzbuzzRoute, fizzBuzzHandler(validate, store)) // parameters passed as query string
 	e.GET(topHitsRoute, topHitsHandler(store))

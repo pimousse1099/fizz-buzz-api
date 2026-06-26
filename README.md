@@ -90,11 +90,11 @@ its parameters and how many times it was made, as `{"request_params": { ... }, "
 mutex-guarded map keyed by the request parameters, so the endpoint is safe under concurrency. This is
 custom JSON and **not** Prometheus exposition format — see the limitations below.
 
-Logs are structured JSON (`log/slog`) written to stdout, one line per request carrying `method`,
-`uri`, `status`, `latency` and a correlation `request_id` (also returned as the `X-Request-ID`
-response header). Failures are escalated by status (4xx logged at `WARN`, 5xx at `ERROR`) with the
-error attached. A sidecar (fluentd, filebeat, ...) is the suggested way to ship the logs into a log
-service (graylog, logstash, ...).
+Logs are structured JSON (`log/slog`) written to stdout via echo's `RequestLogger` middleware — one
+line per request (`method`, `uri`, `status`, `latency`, a correlation `request_id`, and more), at
+`INFO` on success and `ERROR` on failure (with the error attached). The `request_id` is also returned
+as the `X-Request-Id` response header. A sidecar (fluentd, filebeat, ...) is the suggested way to
+ship the logs into a log service (graylog, logstash, ...).
 
 ## CI/CD
 

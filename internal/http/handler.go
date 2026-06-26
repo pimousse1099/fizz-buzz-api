@@ -42,10 +42,14 @@ func fizzBuzzHandler(validate *validator.Validate, store StatsStorer) echo.Handl
 
 		ctx := c.Request().Context()
 
-		// best-effort: a stats failure must not fail the user's request
+		// best-effort: a stats failure must not fail the user's request.
+		// NOTE: this uses Warn, not WarnContext, so the line is NOT correlated to
+		// the request (no request_id) — the base slog handler reads nothing from
+		// the context, so passing it would change nothing here. Proper per-log
+		// correlation would need a context-aware slog handler (see clean-archi-2026).
 		err = store.RecordFizzBuzzRequestHit(ctx, *req)
 		if err != nil {
-			c.Logger().WarnContext(ctx, "failed to record fizzbuzz request hit", "error", err)
+			c.Logger().Warn("failed to record fizzbuzz request hit", "error", err)
 		}
 
 		return c.JSON(http.StatusOK, resp)
