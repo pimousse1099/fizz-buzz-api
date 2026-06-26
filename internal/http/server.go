@@ -25,9 +25,6 @@ const (
 	requestTimeout = 10 * time.Second
 	// shutdownTimeout bounds how long graceful shutdown waits for in-flight requests.
 	shutdownTimeout = 10 * time.Second
-
-	routeFizzBuzz     = "/fizz-buzz"
-	routeTopHitsStats = "/metrics/top-hits"
 )
 
 // New builds the echo server with its middlewares and routes wired.
@@ -37,8 +34,8 @@ func New(logger *slog.Logger, validate *validator.Validate, store StatsStorer) *
 
 	useMiddlewares(e, logger)
 
-	e.GET(routeFizzBuzz, fizzBuzzHandler(validate, store)) // parameters passed as query string
-	e.GET(routeTopHitsStats, topHitsHandler(store))
+	e.GET(fizzbuzzRoute, fizzBuzzHandler(validate, store)) // parameters passed as query string
+	e.GET(topHitsRoute, topHitsHandler(store))
 
 	return e
 }

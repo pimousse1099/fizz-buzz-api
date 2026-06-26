@@ -10,6 +10,11 @@ import (
 	"github.com/pimousse1099/fizz-buzz-api/internal/domain"
 )
 
+const (
+	fizzbuzzRoute = "/fizz-buzz"
+	topHitsRoute  = "/metrics/top-hits"
+)
+
 // StatsStorer records fizz-buzz requests and reports the most frequent one. It is
 // defined here, on the consumer side, since the handlers are its only users.
 type StatsStorer interface {
