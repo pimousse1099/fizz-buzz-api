@@ -7,14 +7,15 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v5"
 	"github.com/stretchr/testify/assert"
 )
 
-// testServer builds the HTTP server with a logger that discards output so test
-// runs stay quiet.
+// testServer builds the HTTP server with its dependencies, using a logger that
+// discards output so test runs stay quiet.
 func testServer() *echo.Echo {
-	return getHTTPServer(slog.New(slog.DiscardHandler))
+	return getHTTPServer(slog.New(slog.DiscardHandler), validator.New(), newMetricsCollector())
 }
 
 // =====================================================================================================================

@@ -35,14 +35,6 @@ type (
 	}
 )
 
-type customValidator struct {
-	validator *validator.Validate
-}
-
-func (cv *customValidator) Validate(i any) error {
-	return cv.validator.Struct(i)
-}
-
 const (
 	listenAddress = ":8080"
 
@@ -58,8 +50,10 @@ const (
 
 func main() {
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
+	validate := validator.New()
+	stats := newMetricsCollector()
 
-	e := getHTTPServer(logger)
+	e := getHTTPServer(logger, validate, stats)
 
 	// Cancel the start context on SIGINT/SIGTERM so StartConfig performs a graceful shutdown.
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
@@ -81,10 +75,9 @@ func main() {
 	logger.Info("server stopped gracefully")
 }
 
-func getHTTPServer(logger *slog.Logger) *echo.Echo {
+func getHTTPServer(logger *slog.Logger, validate *validator.Validate, stats *metricsCollector) *echo.Echo {
 	e := echo.New()
 	e.Logger = logger // echo v5 logs through slog natively
-	e.Validator = &customValidator{validator: validator.New()}
 
 	// Middlewares (outermost first).
 	e.Use(middleware.Recover())                                                    // catch panics, return HTTP 500
@@ -97,9 +90,7 @@ func getHTTPServer(logger *slog.Logger) *echo.Echo {
 	e.Use(middleware.RateLimiter(middleware.NewRateLimiterMemoryStore(rateLimit))) // throttle per client IP
 	e.Use(middleware.ContextTimeout(requestTimeout))                               // bound handler execution time
 
-	stats := newMetricsCollector()
-
-	e.GET("/fizz-buzz", fizzBuzzHandler(stats)) // parameters passed as query string
+	e.GET("/fizz-buzz", fizzBuzzHandler(validate, stats)) // parameters passed as query string
 	e.GET("/metrics", metricsHandler(stats))
 
 	return e
@@ -160,7 +151,7 @@ func metricsHandler(stats *metricsCollector) echo.HandlerFunc {
 	}
 }
 
-func fizzBuzzHandler(stats *metricsCollector) echo.HandlerFunc {
+func fizzBuzzHandler(validate *validator.Validate, stats *metricsCollector) echo.HandlerFunc {
 	return func(c *echo.Context) error {
 		// bind query parameters into fizzBuzzRequest
 		req := new(fizzBuzzRequest)
@@ -171,7 +162,7 @@ func fizzBuzzHandler(stats *metricsCollector) echo.HandlerFunc {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
 
-		err = c.Validate(req)
+		err = validate.Struct(req)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}

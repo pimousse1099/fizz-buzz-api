@@ -122,7 +122,7 @@ health/readiness probes and distributed tracing — lives on the `clean-archi-20
 | # | Gap | Impact |
 |---|-----|--------|
 | 1 | **`limit` is unbounded** — the response slice is sized directly from `limit` (a `uint`) | A single very large `limit` allocates a correspondingly huge slice → memory exhaustion / DoS. No upper bound, pagination or streaming. The 1 MiB body cap does not constrain a query-string `limit`. |
-| 2 | **Unbounded stats growth** — the stats map keeps one entry per distinct parameter tuple, never evicted, and `/metrics` scans it in O(n) | High-cardinality clients drive memory growth, and the statistics scan slows as the key space grows. |
+| 2 | **Unbounded stats growth** — the stats map keeps one entry per distinct parameter tuple, never evicted (the most-frequent lookup itself is O(1)) | High-cardinality clients drive memory growth over time. |
 | 3 | **Hardcoded configuration** — the listen address is `:8080` with no environment-variable configuration | Conflicts with 12-factor config; the port cannot change and multiple instances cannot run without recompiling. |
 | 4 | **No health / readiness probes** | Orchestrators (Kubernetes, ECS) cannot gauge liveness or readiness. |
 | 5 | **Limited observability** — structured slog request logs with a correlation id are emitted, but there is no distributed tracing and `/metrics` is custom JSON, not Prometheus exposition format | Per-request latency/errors are visible in logs, but there is no trace-level insight and `/metrics` won't scrape despite its name. |
