@@ -17,6 +17,14 @@ type (
 
 	// GenerateFizzBuzzResponse is the produced list of values, from 1 to Limit.
 	GenerateFizzBuzzResponse []string
+
+	// GetFizzBuzzTopHitsResponse is the payload of the statistics endpoint: the
+	// parameters of the most frequently requested fizz-buzz call and how many
+	// times it was made.
+	GetFizzBuzzTopHitsResponse struct {
+		RequestParams GenerateFizzBuzzRequest `json:"request_params"`
+		Hits          uint                    `json:"nb_hits"`
+	}
 )
 
 // Generate builds the fizz-buzz response for req: multiples of Int1 become Str1,

@@ -9,13 +9,6 @@ import (
 	"github.com/pimousse1099/fizz-buzz-api/internal/domain"
 )
 
-// statsResponse is the payload of the statistics endpoint: the parameters of the
-// most frequently requested fizz-buzz call and how many times it was made.
-type statsResponse struct {
-	RequestParams domain.GenerateFizzBuzzRequest `json:"request_params"`
-	Hits          uint                           `json:"nb_hits"`
-}
-
 func fizzBuzzHandler(validate *validator.Validate, store StatsStorer) echo.HandlerFunc {
 	return func(c *echo.Context) error {
 		// bind query parameters into the request
@@ -45,6 +38,6 @@ func topHitsHandler(store StatsStorer) echo.HandlerFunc {
 			return c.JSON(http.StatusOK, "no data collected yet")
 		}
 
-		return c.JSON(http.StatusOK, statsResponse{RequestParams: req, Hits: hits})
+		return c.JSON(http.StatusOK, domain.GetFizzBuzzTopHitsResponse{RequestParams: req, Hits: hits})
 	}
 }
