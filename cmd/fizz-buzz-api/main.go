@@ -9,13 +9,18 @@ import (
 	"syscall"
 
 	"github.com/go-playground/validator/v10"
+	slogctx "github.com/veqryn/slog-context"
 
 	httpserver "github.com/pimousse1099/fizz-buzz-api/internal/http"
 	"github.com/pimousse1099/fizz-buzz-api/internal/statsstorer"
 )
 
 func main() {
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
+	// slogctx.NewHandler stamps each record with attributes carried in the context
+	// (request_id, added by the requestID middleware), so *Context log calls are
+	// automatically correlated.
+	handler := slogctx.NewHandler(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}), nil)
+	logger := slog.New(handler)
 	validate := validator.New()
 	store := statsstorer.NewInMemory()
 

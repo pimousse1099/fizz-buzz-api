@@ -93,8 +93,13 @@ custom JSON and **not** Prometheus exposition format — see the limitations bel
 Logs are structured JSON (`log/slog`) written to stdout via echo's `RequestLogger` middleware — one
 line per request (`method`, `uri`, `status`, `latency`, a correlation `request_id`, and more), at
 `INFO` on success and `ERROR` on failure (with the error attached). The `request_id` is also returned
-as the `X-Request-Id` response header. A sidecar (fluentd, filebeat, ...) is the suggested way to
-ship the logs into a log service (graylog, logstash, ...).
+as the `X-Request-Id` response header.
+
+The logger wraps a [`veqryn/slog-context`](https://github.com/veqryn/slog-context) handler, and the
+`requestID` middleware appends the id to the request context — so any log made inside a handler with
+the slog `*Context` methods (e.g. `WarnContext`) is automatically stamped with the same `request_id`,
+no logger passing required. A sidecar (fluentd, filebeat, ...) is the suggested way to ship the logs
+into a log service (graylog, logstash, ...).
 
 ## CI/CD
 
