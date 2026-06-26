@@ -2,7 +2,6 @@ package http
 
 import (
 	"context"
-	"log/slog"
 	"net/http"
 
 	"github.com/go-playground/validator/v10"
@@ -18,7 +17,7 @@ type StatsStorer interface {
 	GetFizzBuzzTopHits(ctx context.Context) (domain.GetFizzBuzzTopHitsResponse, error)
 }
 
-func fizzBuzzHandler(logger *slog.Logger, validate *validator.Validate, store StatsStorer) echo.HandlerFunc {
+func fizzBuzzHandler(validate *validator.Validate, store StatsStorer) echo.HandlerFunc {
 	return func(c *echo.Context) error {
 		// bind query parameters into the request
 		req := new(domain.GenerateFizzBuzzRequest)
@@ -39,7 +38,7 @@ func fizzBuzzHandler(logger *slog.Logger, validate *validator.Validate, store St
 		// best-effort: a stats failure must not fail the user's request
 		err = store.RecordFizzBuzzRequestHit(ctx, *req)
 		if err != nil {
-			logger.WarnContext(ctx, "failed to record fizzbuzz request hit", "error", err)
+			c.Logger().WarnContext(ctx, "failed to record fizzbuzz request hit", "error", err)
 		}
 
 		return c.JSON(http.StatusOK, domain.Generate(*req))

@@ -37,7 +37,7 @@ func New(logger *slog.Logger, validate *validator.Validate, store StatsStorer) *
 
 	useMiddlewares(e, logger)
 
-	e.GET(routeFizzBuzz, fizzBuzzHandler(logger, validate, store)) // parameters passed as query string
+	e.GET(routeFizzBuzz, fizzBuzzHandler(validate, store)) // parameters passed as query string
 	e.GET(routeTopHitsStats, topHitsHandler(store))
 
 	return e
