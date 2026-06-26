@@ -2,7 +2,7 @@ DOCKER_REPOSITORY ?= rmasclef/fizz-buzz-api-go
 
 lint:
 	@echo "> Launch linter..."
-	docker run --rm -v $(PWD):/project -w /project golangci/golangci-lint:v2.5.0 golangci-lint run -v
+	docker run --rm -v $(PWD):/project -w /project golangci/golangci-lint:v2.12.2 golangci-lint run -v
 
 test:
 	@echo "> running tests ..."

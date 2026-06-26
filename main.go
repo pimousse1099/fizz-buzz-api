@@ -2,19 +2,23 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
 	"sort"
 	"strconv"
+	"strings"
+	"syscall"
 	"time"
 
 	"github.com/go-playground/validator/v10"
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
-	"github.com/labstack/gommon/log"
+	"github.com/labstack/echo/v5"
+	"github.com/labstack/echo/v5/middleware"
 )
+
 type (
 	fizzBuzzRequest struct {
 		Str1  string `json:"str1" validate:"required"`
@@ -34,59 +38,107 @@ type customValidator struct {
 	validator *validator.Validate
 }
 
-func (cv *customValidator) Validate(i interface{}) error {
+func (cv *customValidator) Validate(i any) error {
 	return cv.validator.Struct(i)
 }
 
+const (
+	listenAddress = ":8080"
+
+	// maxRequestBody caps the accepted request body size.
+	maxRequestBody = 1 << 20 // 1 MiB
+	// rateLimit is the per-client request rate (requests/second).
+	rateLimit = 20
+	// requestTimeout bounds the time spent in the handler chain.
+	requestTimeout = 10 * time.Second
+	// shutdownTimeout bounds how long graceful shutdown waits for in-flight requests.
+	shutdownTimeout = 10 * time.Second
+)
+
 func main() {
-	// start HTTP server
-	srv := getHTTPServer()
-	srv.Logger.SetLevel(log.INFO)
+	e := getHTTPServer()
 
-	// Start server
-	go func() {
-		if err := srv.Start(":8080"); err != nil {
-			srv.Logger.Error(err)
-		}
-	}()
+	// Cancel the start context on SIGINT/SIGTERM so StartConfig performs a graceful shutdown.
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
 
-	// Wait for interrupt signal to gracefully shutdown the server with a timeout of 10 seconds.
-	stop := make(chan os.Signal, 1)
-	signal.Notify(stop, os.Interrupt)
-	<-stop
+	e.Logger.Info("starting server", "address", listenAddress)
 
-	srv.Logger.Info("shutting down the server")
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	if err := srv.Shutdown(ctx); err != nil {
-		srv.Logger.Fatal(err)
+	sc := echo.StartConfig{Address: listenAddress, GracefulTimeout: shutdownTimeout}
+
+	err := sc.Start(ctx, e)
+	if err != nil && !errors.Is(err, http.ErrServerClosed) {
+		e.Logger.Error("server terminated unexpectedly", "error", err)
+		os.Exit(1)
 	}
+
+	e.Logger.Info("server stopped gracefully")
 }
 
 func getHTTPServer() *echo.Echo {
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
+
 	e := echo.New()
+	e.Logger = logger // echo v5 logs through slog natively
 	e.Validator = &customValidator{validator: validator.New()}
+
+	// Middlewares (outermost first).
+	e.Use(middleware.Recover())                                                    // catch panics, return HTTP 500
+	e.Use(middleware.RequestID())                                                  // assign/propagate X-Request-ID
+	e.Use(requestLogger(logger))                                                   // structured access log via slog
+	e.Use(middleware.Secure())                                                     // security response headers
+	e.Use(middleware.CORS("*"))                                                    // permissive CORS (tighten origins in prod)
+	e.Use(middleware.Gzip())                                                       // response compression
+	e.Use(middleware.BodyLimit(maxRequestBody))                                    // reject oversized bodies
+	e.Use(middleware.RateLimiter(middleware.NewRateLimiterMemoryStore(rateLimit))) // throttle per client IP
+	e.Use(middleware.ContextTimeout(requestTimeout))                               // bound handler execution time
+
 	metricsCollector := &metricsCollector{}
 
-	// Middlewares
-	e.Use(middleware.Logger())  // enable logging
-	e.Use(middleware.Recover()) // catch panics and recover from them (return an HTTP 500)
-
-	e.POST("/fizz-buzz", fizzBuzzHandler(metricsCollector), requestContentTypeFilterer()) // only allow 'application/json' request content-type
+	e.POST("/fizz-buzz", fizzBuzzHandler(metricsCollector), requestContentTypeFilterer()) // only allow 'application/json'
 	e.GET("/metrics", metricsHandler(metricsCollector))
 
 	return e
+}
+
+// requestLogger bridges echo's RequestLogger middleware to the application slog logger.
+func requestLogger(logger *slog.Logger) echo.MiddlewareFunc {
+	return middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
+		LogMethod:    true,
+		LogURI:       true,
+		LogStatus:    true,
+		LogLatency:   true,
+		LogRequestID: true,
+		HandleError:  true, // let the global error handler set the status before logging
+		LogValuesFunc: func(c *echo.Context, v middleware.RequestLoggerValues) error {
+			attrs := []slog.Attr{
+				slog.String("method", v.Method),
+				slog.String("uri", v.URI),
+				slog.Int("status", v.Status),
+				slog.Duration("latency", v.Latency),
+				slog.String("request_id", v.RequestID),
+			}
+			ctx := c.Request().Context()
+			if v.Error != nil {
+				logger.LogAttrs(ctx, slog.LevelError, "request failed", append(attrs, slog.String("error", v.Error.Error()))...)
+				return nil
+			}
+			logger.LogAttrs(ctx, slog.LevelInfo, "request handled", attrs...)
+			return nil
+		},
+	})
 }
 
 // =====================================================================================================================
 // ============================================================ MIDDLEWARES ============================================
 // =====================================================================================================================
 
-func requestContentTypeFilterer() func(next echo.HandlerFunc) echo.HandlerFunc {
+func requestContentTypeFilterer() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
+		return func(c *echo.Context) error {
+			// Match by prefix so "application/json; charset=UTF-8" is also accepted.
 			contentType := c.Request().Header.Get(echo.HeaderContentType)
-			if contentType != echo.MIMEApplicationJSON && contentType != echo.MIMEApplicationJSONCharsetUTF8 {
+			if !strings.HasPrefix(contentType, echo.MIMEApplicationJSON) {
 				return c.JSON(
 					http.StatusBadRequest,
 					fmt.Sprintf(`This API only allows 'application/json' requests (provided: %s).`, contentType),
@@ -102,7 +154,7 @@ func requestContentTypeFilterer() func(next echo.HandlerFunc) echo.HandlerFunc {
 // =====================================================================================================================
 
 func metricsHandler(mc *metricsCollector) echo.HandlerFunc {
-	return func(c echo.Context) error {
+	return func(c *echo.Context) error {
 		if mc == nil || mc.RequestCounters == nil {
 			return c.JSON(http.StatusOK, "no data collected yet")
 		}
@@ -112,14 +164,18 @@ func metricsHandler(mc *metricsCollector) echo.HandlerFunc {
 }
 
 func fizzBuzzHandler(mc *metricsCollector) echo.HandlerFunc {
-	return func(ctx echo.Context) error {
-		// bind HTTP Request (form-data or JSON) to fizzBuzzRequest
+	return func(c *echo.Context) error {
+		// bind HTTP request (JSON) to fizzBuzzRequest
 		req := new(fizzBuzzRequest)
-		if err := ctx.Bind(req); err != nil {
-			return ctx.JSON(http.StatusBadRequest, err.Error())
+
+		err := c.Bind(req)
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, err.Error())
 		}
-		if err := ctx.Validate(req); err != nil {
-			return ctx.JSON(http.StatusBadRequest, err.Error())
+
+		err = c.Validate(req)
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, err.Error())
 		}
 
 		// increment request counter metric
@@ -127,8 +183,8 @@ func fizzBuzzHandler(mc *metricsCollector) echo.HandlerFunc {
 			mc.IncRequestCounter(req.String())
 		}
 
-		// call fizzbuzz controller and transform the fizzbuzzResponse into an HTTP JSON expectedResponse
-		return ctx.JSON(http.StatusOK, fizzBuzzController(req))
+		// call fizzbuzz controller and transform the response into an HTTP JSON response
+		return c.JSON(http.StatusOK, fizzBuzzController(req))
 	}
 }
 

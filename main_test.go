@@ -7,7 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -18,7 +18,8 @@ import (
 func TestMainWithJSONRequest(t *testing.T) {
 	jsonReq, _ := json.Marshal(&fizzBuzzRequest{Str1: "fizz", Str2: "buzz", Int1: 2, Int2: 3, Limit: 10})
 	request := httptest.NewRequest(http.MethodPost, "/fizz-buzz", bytes.NewReader(jsonReq))
-	request.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+	// charset suffix must still be accepted (filterer matches by prefix)
+	request.Header.Set(echo.HeaderContentType, "application/json; charset=UTF-8")
 	response := httptest.NewRecorder()
 
 	getHTTPServer().ServeHTTP(response, request)
@@ -32,7 +33,7 @@ func TestMainWithJSONRequest(t *testing.T) {
 func TestMainWithJSONRequestAndMissingParams(t *testing.T) {
 	jsonReq, _ := json.Marshal(&fizzBuzzRequest{Str1: "fizz", Int1: 2, Int2: 3, Limit: 20})
 	request := httptest.NewRequest(http.MethodPost, "/fizz-buzz", bytes.NewReader(jsonReq))
-	request.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+	request.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 	response := httptest.NewRecorder()
 
 	getHTTPServer().ServeHTTP(response, request)

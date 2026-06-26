@@ -31,15 +31,18 @@ type (
 	}
 	RequestCounters []*RequestCounter
 )
+
 // Len is the number of elements in the collection.
 func (rcs RequestCounters) Len() int {
 	return len(rcs)
 }
+
 // Less reports whether the element with
 // index i should sort before the element with index j.
 func (rcs RequestCounters) Less(i, j int) bool {
 	return rcs[i].Counter > rcs[j].Counter
 }
+
 // Swap swaps the elements with indexes i and j.
 func (rcs RequestCounters) Swap(i, j int) {
 	tmp := rcs[i]

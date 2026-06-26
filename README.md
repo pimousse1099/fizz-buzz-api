@@ -1,21 +1,31 @@
 # fizz-buzz-api
 
-straight-forward implementation of a fizz-buzz REST API
+straight-forward implementation of a fizz-buzz REST API.
 
-It uses echo web framework in order not having to rewrite request binding, validation or HTTP middlewares.
+It uses the [echo v5](https://echo.labstack.com/) web framework so we don't have to rewrite request
+binding, validation or HTTP middlewares by hand. Logging is structured JSON via the standard
+library [`log/slog`](https://pkg.go.dev/log/slog) (echo v5 logs through slog natively).
 
-It only allows user to make JSON POST requests
+It only allows users to make JSON `POST` requests.
+
+The server listens on a **fixed** `:8080` (see limitations) and wires the following middlewares:
+`Recover`, `RequestID`, a slog-backed request logger, `Secure` (security headers), `CORS`, `Gzip`,
+`BodyLimit` (1 MiB), a per-IP `RateLimiter` (20 req/s) and a per-request `ContextTimeout` (10s).
+Shutdown is graceful: `SIGINT`/`SIGTERM` drains in-flight requests (10s budget) before exiting.
 
 ## usage
 
 ### prod
 
-`docker run --rm --expose=8080 -p 8080:8080 rmasclef/fizz-buzz-api-go:v0.1.0`
+`docker run --rm -p 8080:8080 rmasclef/fizz-buzz-api-go:v0.1.0`
 
 ### dev
-`make run HTTP_PORT=8080`
+`make run`
 or
-`go run main.go HTTP_PORT=8080`
+`go run .`
+
+> Note: the listen port is hardcoded to `:8080`; the previously advertised `HTTP_PORT` argument is
+> ignored (see limitations).
 
 ## example
 
@@ -74,27 +84,29 @@ the two above code snippets will return the following response body:
 domain request counters are exposed on `GET /metrics` (sorted by hit count). Note this is **not**
 Prometheus exposition format despite the conventional path name — see the limitations below.
 
-logs are echo's default access log, sent to stdout. We suggest a sidecar (fluentd, filebeats, ...)
-to aggregate them in a log service (graylog, logstash, ...).
+logs are structured JSON (`log/slog`) written to stdout, one line per request with `method`, `uri`,
+`status`, `latency` and a correlation `request_id` (also returned as the `X-Request-ID` header). We
+suggest a sidecar (fluentd, filebeats, ...) to aggregate them in a log service (graylog, logstash, ...).
 
 ## limitations (this version is NOT production-ready)
 
-This branch is the **simple / naive** implementation. It works for a demo but should not be
-deployed as-is. The gaps below are intentional and documented so the trade-offs are explicit; a
-hardened design lives on the `clean-archi-2026` branch.
+This branch is the **simple / naive** implementation. Some hardening is now in place (request
+timeout, body-size cap, per-IP rate limiting, security headers, structured logging with correlation
+ids and graceful shutdown — see the intro), but it still should not be deployed as-is. The gaps
+below are intentional and documented so the trade-offs are explicit; a fully hardened, layered
+design lives on the `clean-archi-2026` branch.
 
 ### Production-readiness
 
 | # | Gap | Impact |
 |---|-----|--------|
-| 1 | **`limit` is unbounded** — `make(fizzBuzzResponse, limit)` with `limit` validated only as `required` (non-zero `uint`) | A single `limit=4000000000` request allocates billions of strings → OOM / denial of service. No upper bound, pagination or streaming. |
+| 1 | **`limit` is unbounded** — `make(fizzBuzzResponse, limit)` with `limit` validated only as `required` (non-zero `uint`) | A single `limit=4000000000` request allocates billions of strings → OOM / denial of service. No upper bound, pagination or streaming. (Mitigated, not solved, by the 1 MiB body cap on the *request*.) |
 | 2 | **Data races in the stats collector** — `IncRequestCounter` ranges over the slice outside the mutex; `/metrics` calls `sort.Sort` (in-place) with no lock | Under real concurrency: corrupted counts or crash. The current tests don't exercise concurrency, so `-race` stays green — a false sense of safety. |
 | 3 | **Unbounded stats growth** — every distinct parameter tuple appends an entry that is never evicted, looked up via O(n) linear scan | High-cardinality / malicious clients leak memory and degrade latency over time. |
-| 4 | **Hardcoded configuration** — the listen address is hardcoded `:8080`; `HTTP_PORT` (advertised in the Makefile/README) is ignored by `main` | Cannot change ports or run multiple instances without recompiling. Violates 12-factor config. |
+| 4 | **Hardcoded configuration** — the listen address is hardcoded `:8080`; `HTTP_PORT` (previously advertised in the Makefile/README) is ignored by `main` | Cannot change ports or run multiple instances without recompiling. Violates 12-factor config. |
 | 5 | **No health / readiness probes** | Orchestrators (Kubernetes, ECS) cannot tell whether the instance is alive or ready to serve. |
-| 6 | **No real observability** — echo's access log only (no structured/leveled app logs, no correlation id), no distributed tracing, `/metrics` is custom JSON not Prometheus | API performance and errors cannot be observed; the `/metrics` path won't scrape despite its name. |
-| 7 | **No timeouts / body-size cap / rate limiting** — relies on echo defaults | Trivially DoS-able (slowloris, oversized bodies, request floods). |
-| 8 | **Stats are per-instance, in-memory, lost on restart** | Behind a load balancer the "most frequent request" is wrong, and all counts vanish on redeploy. |
+| 6 | **Partial observability** — structured slog logs with `request_id` are now emitted, but there is still no distributed tracing, and `/metrics` is custom JSON, not Prometheus exposition format | Per-request latency/errors are visible in logs, but there is no trace-level insight and the `/metrics` path won't scrape despite its name. |
+| 7 | **Stats are per-instance, in-memory, lost on restart** | Behind a load balancer the "most frequent request" is wrong, and all counts vanish on redeploy. |
 
 ### Maintainability
 
