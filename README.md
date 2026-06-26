@@ -11,7 +11,8 @@ slog-backed request logger, `Secure` (security headers), `CORS` (permissive, ori
 `BodyLimit` (1 MiB), a per-IP `RateLimiter` (20 req/s) and a per-request `ContextTimeout` (10s).
 Shutdown is graceful: `SIGINT`/`SIGTERM` drains in-flight requests (10s budget) before exiting.
 
-The codebase is a single flat `main` package (`main.go`, `metrics.go`) and targets Go 1.26.
+The codebase targets Go 1.26 and is organised into small, single-responsibility packages (see
+[project layout](#project-layout)).
 
 ## usage
 
@@ -26,7 +27,7 @@ docker run --rm -p 8080:8080 rmasclef/fizz-buzz-api-go:v0.1.0
 ```sh
 make run
 # or
-go run .
+go run ./cmd/fizz-buzz-api
 ```
 
 ## example
@@ -83,12 +84,11 @@ Both snippets return the following response body:
 
 ## metrics and logs
 
-`GET /metrics` returns the statistics for the **most frequently requested** fizz-buzz call: its
-parameters and how many times it was made, as `{"request_params": { ... }, "nb_hits": N}` (or the
+`GET /metrics/top-hits` returns the statistics for the **most frequently requested** fizz-buzz call:
+its parameters and how many times it was made, as `{"request_params": { ... }, "nb_hits": N}` (or the
 string `"no data collected yet"` until a request has been served). The counters are kept in a
-mutex-guarded map keyed by the request parameters, so the endpoint is safe under concurrency. This
-is custom JSON and **not** Prometheus exposition format despite the conventional path name — see the
-limitations below.
+mutex-guarded map keyed by the request parameters, so the endpoint is safe under concurrency. This is
+custom JSON and **not** Prometheus exposition format — see the limitations below.
 
 Logs are structured JSON (`log/slog`) written to stdout, one line per request carrying `method`,
 `uri`, `status`, `latency` and a correlation `request_id` (also returned as the `X-Request-ID`
@@ -110,12 +110,27 @@ CGO-disabled, `-trimpath` binary that runs on `gcr.io/distroless/static:nonroot`
 65532, ships ca-certs, no shell or package manager). The Dockerfile sets no env defaults and does
 not `EXPOSE` a port — the operator provides everything at runtime.
 
+## project layout
+
+```
+cmd/fizz-buzz-api/      composition root: builds dependencies, handles signals, runs the server
+internal/
+  domain/              fizz-buzz request/response types and the Generate logic (no transport/storage)
+  http/                echo server setup, handlers, middlewares, and the StatsStorer interface
+  statsstorer/         in-memory StatsStorer implementation
+```
+
+Dependencies point inward: `domain` has no internal imports; `http` and `statsstorer` depend on
+`domain`; `cmd` wires everything together. The `http` package declares the `StatsStorer` interface it
+needs (consumer-side), and `statsstorer.InMemory` satisfies it — so the store can be swapped (e.g.
+for a Redis-backed one) without touching the HTTP layer.
+
 ## limitations
 
-This is the **simple** implementation: deliberately flat and minimal. The gaps below are inherent
-trade-offs of that choice, documented so they are explicit. A fully hardened, layered (hexagonal)
-design — with bounded inputs, a swappable persistent stats store, env-based config, and
-health/readiness probes and distributed tracing — lives on the `clean-archi-2026` branch.
+This is the **simple** implementation: small and intentionally lean. The gaps below are inherent
+trade-offs of that choice, documented so they are explicit. A fully hardened design — with bounded
+inputs, a persistent stats store, env-based config, health/readiness probes and distributed tracing —
+lives on the `clean-archi-2026` branch.
 
 ### Production-readiness
 
@@ -125,13 +140,11 @@ health/readiness probes and distributed tracing — lives on the `clean-archi-20
 | 2 | **Unbounded stats growth** — the stats map keeps one entry per distinct parameter tuple, never evicted (the most-frequent lookup itself is O(1)) | High-cardinality clients drive memory growth over time. |
 | 3 | **Hardcoded configuration** — the listen address is `:8080` with no environment-variable configuration | Conflicts with 12-factor config; the port cannot change and multiple instances cannot run without recompiling. |
 | 4 | **No health / readiness probes** | Orchestrators (Kubernetes, ECS) cannot gauge liveness or readiness. |
-| 5 | **Limited observability** — structured slog request logs with a correlation id are emitted, but there is no distributed tracing and `/metrics` is custom JSON, not Prometheus exposition format | Per-request latency/errors are visible in logs, but there is no trace-level insight and `/metrics` won't scrape despite its name. |
+| 5 | **Limited observability** — structured slog request logs with a correlation id are emitted, but there is no distributed tracing and statistics are custom JSON, not Prometheus exposition format | Per-request latency/errors are visible in logs, but there is no trace-level insight and the stats endpoint won't scrape. |
 | 6 | **Stats are per-instance and in-memory** | Behind a load balancer the "most frequent request" is per-replica and incorrect overall, and all counts are lost on restart. |
 
 ### Maintainability
 
 | # | Gap | Impact |
 |---|-----|--------|
-| 1 | **No layering** — HTTP wiring, validation, domain logic and the stats store all live in a single flat `main` package | Hard to unit-test in isolation and hard to swap implementations (e.g. a Redis-backed store). |
-| 2 | **`/metrics` naming collision** — conventionally Prometheus, here domain statistics | Confusing for operators and scraping tooling. |
-| 3 | **Brittle tests** — the integration tests assert on exact validator error strings | Breaks across library versions. |
+| 1 | **Brittle tests** — the integration tests assert on exact validator error strings | Breaks across library versions. |

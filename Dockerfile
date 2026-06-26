@@ -7,7 +7,7 @@ RUN go mod download
 
 COPY . .
 # CGO disabled -> fully static binary, runnable on a distroless/scratch base.
-RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /fizz-buzz-api .
+RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /fizz-buzz-api ./cmd/fizz-buzz-api
 
 # distroless static + nonroot: no shell/package manager (small attack surface),
 # but unlike scratch it ships ca-certificates, tzdata and a nonroot user (uid 65532).

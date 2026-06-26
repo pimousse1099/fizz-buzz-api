@@ -18,7 +18,7 @@ push-image:
 	docker push $(DOCKER_REPOSITORY):$(TAG)
 
 run:
-	@echo "> running fizz-buzz-api on port $(HTTP_PORT)"
-	docker run --rm -it -v $(PWD):/project -w /project --expose=$(HTTP_PORT) -p8080:$(HTTP_PORT) golang:1.26-alpine go run ./main.go
+	@echo "> running fizz-buzz-api on :8080"
+	docker run --rm -it -v $(PWD):/project -w /project -p8080:8080 golang:1.26-alpine go run ./cmd/fizz-buzz-api
 
 .PHONY: lint test build-image push-image run
