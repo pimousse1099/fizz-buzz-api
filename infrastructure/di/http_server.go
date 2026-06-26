@@ -1,6 +1,7 @@
 package di
 
 import (
+	"compress/flate"
 	"context"
 	"log/slog"
 	"net"
@@ -39,9 +40,10 @@ func (c *Container) GetHTTPServer() *httpserver.Server {
 }
 
 // getHTTPHandler builds the chi router and its middleware stack. Order (outer to
-// inner): request-id, structured request logging, panic recovery, rate-limit.
-// The rate limiter is per-IP (local guard); a distributed counter is available
-// via go-chi/httprate-redis (httprate.WithLimitCounter) — see the ADR.
+// inner): tracing, request-id, structured request logging, panic recovery,
+// response compression, rate-limit. The rate limiter is per-IP (local guard); a
+// distributed counter is available via go-chi/httprate-redis
+// (httprate.WithLimitCounter) — see the ADR.
 func (c *Container) getHTTPHandler() http.Handler {
 	router := chi.NewRouter()
 
@@ -51,6 +53,9 @@ func (c *Container) getHTTPHandler() http.Handler {
 	router.Use(middleware.RequestID)
 	router.Use(ctxlog.RequestLogger(c.getHTTPLogger()))
 	router.Use(middleware.Recoverer)
+	// Compress JSON/text responses (chi's default set includes application/json),
+	// negotiated via Accept-Encoding.
+	router.Use(middleware.Compress(flate.BestSpeed))
 	router.Use(httprate.LimitByIP(c.config.HTTP.RateLimitRequests, c.config.HTTP.RateLimitWindow))
 
 	// Liveness: the process is up. Readiness: ready to serve traffic — there are
