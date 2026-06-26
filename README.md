@@ -69,7 +69,9 @@ successful generation has happened.
   [ADR 0016](docs/architecture-decision-records/0016-rate-limiting-httprate.md).)
 - **Response compression** — gzip/deflate for compressible types (incl. JSON),
   negotiated via `Accept-Encoding`.
-- **Timeouts** — read-header / write / idle timeouts on the HTTP server.
+- **Timeouts** — read-header / write / idle timeouts on the HTTP server, plus a
+  per-request handler deadline (`HTTP_REQUEST_TIMEOUT`): the request context is
+  cancelled and `504` returned if a handler outlives it.
 
 ## Configuration
 
@@ -84,6 +86,7 @@ variables have **no default on purpose** — they must be provided explicitly.
 | `HTTP_READ_HEADER_TIMEOUT` | no | `2s` | Read-header timeout |
 | `HTTP_WRITE_TIMEOUT` | no | `10s` | Write timeout |
 | `HTTP_IDLE_TIMEOUT` | no | `120s` | Idle timeout |
+| `HTTP_REQUEST_TIMEOUT` | no | `5s` | Per-request handler deadline (504 on overrun) |
 | `HTTP_RATE_LIMIT_REQUESTS` | no | `100` | Per-IP request allowance per window |
 | `HTTP_RATE_LIMIT_WINDOW` | no | `1m` | Rate-limit window length |
 | `FIZZBUZZ_MAX_SEQUENCE_LENGTH` | yes | — | Upper bound for the `limit` parameter |
@@ -144,8 +147,8 @@ Details and rationale in the [developer guide](docs/developer-guide.md) and the
   (handlers → use-cases → ports; a handler never reaches through to the store),
   **and a function receives only what it needs**, never a god-object: e.g.
   `Validate(maxLimit int)` takes the single bound it checks — not the whole
-  `Config` — and the rate-limit middleware is handed a `RateLimiter`, not the
-  container. (You hand the baker the coins, not your whole wallet.)
+  `Config` — and the generate use-case is handed only the `StatRecorder` port it
+  needs, not the DI container. (You hand the baker the coins, not your whole wallet.)
 
 ### Observability & safety
 

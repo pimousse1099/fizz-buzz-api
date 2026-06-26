@@ -27,6 +27,10 @@ func TestNew_Defaults(t *testing.T) {
 		t.Errorf("ReadHeaderTimeout = %v, want 2s", cfg.HTTP.ReadHeaderTimeout)
 	}
 
+	if cfg.HTTP.RequestTimeout != 5*time.Second {
+		t.Errorf("RequestTimeout = %v, want 5s", cfg.HTTP.RequestTimeout)
+	}
+
 	if cfg.HTTP.RateLimitRequests != 100 {
 		t.Errorf("RateLimitRequests = %d, want 100", cfg.HTTP.RateLimitRequests)
 	}

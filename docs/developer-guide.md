@@ -86,9 +86,9 @@ the process is stateless and disposable (fast startup, graceful shutdown on
 neighbour: handlers invoke a use-case, the use-case talks to its ports — a
 handler never reaches through into the store or the domain internals. (2) A
 function receives only what it needs, never a god-object: `Validate(maxLimit int)`
-takes the single bound it checks rather than the whole `Config`; the rate-limit
-middleware is handed a `RateLimiter`, not the DI container. You hand the baker
-the coins, not your whole wallet.
+takes the single bound it checks rather than the whole `Config`; the generate
+use-case is handed only the `StatRecorder` port it needs, not the DI container.
+You hand the baker the coins, not your whole wallet.
 
 **Operational endpoints.** Liveness (`/healthz`) and readiness (`/readyz`) are
 distinct ([ADR 0008](architecture-decision-records/0008-operational-endpoints-health-readiness.md)):

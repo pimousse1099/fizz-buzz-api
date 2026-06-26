@@ -23,6 +23,10 @@ Replace the stdlib-only transport layer with the chi ecosystem:
 - **`chi/middleware.RequestID`** — request-ID injection, replacing the hand-rolled equivalent.
 - **`chi/middleware.Recoverer`** — panic recovery that correctly re-panics `http.ErrAbortHandler`
   and avoids double-writes, fixing the known bug in the hand-rolled `Recovery`.
+- **`chi/middleware.Compress`** — gzip/deflate response compression (chi's default compressible set
+  includes `application/json`), negotiated via `Accept-Encoding`.
+- **`chi/middleware.Timeout`** — per-request context deadline (`HTTP_REQUEST_TIMEOUT`); cancels the
+  request context and returns `504` if a handler outlives it.
 
 **Removed packages:**
 - `presentation/http/middleware/{chain,recovery,request_id,logging}.go`

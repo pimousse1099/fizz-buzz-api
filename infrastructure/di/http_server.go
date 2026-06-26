@@ -41,8 +41,8 @@ func (c *Container) GetHTTPServer() *httpserver.Server {
 
 // getHTTPHandler builds the chi router and its middleware stack. Order (outer to
 // inner): tracing, request-id, structured request logging, panic recovery,
-// response compression, rate-limit. The rate limiter is per-IP (local guard); a
-// distributed counter is available via go-chi/httprate-redis
+// response compression, rate-limit, per-request timeout. The rate limiter is
+// per-IP (local guard); a distributed counter is available via go-chi/httprate-redis
 // (httprate.WithLimitCounter) — see the ADR.
 func (c *Container) getHTTPHandler() http.Handler {
 	router := chi.NewRouter()
@@ -62,6 +62,10 @@ func (c *Container) getHTTPHandler() http.Handler {
 	// inbound copies). Without such a proxy, switch to httprate.LimitByIP, which
 	// keys on the socket address instead. See ADR 0016.
 	router.Use(httprate.LimitByRealIP(c.config.HTTP.RateLimitRequests, c.config.HTTP.RateLimitWindow))
+	// Per-request deadline: cancels the request context and writes 504 if a handler
+	// outlives it. Cooperative — the handler and use-cases must honor ctx (they do,
+	// ctx is threaded through). Innermost so it bounds handler work specifically.
+	router.Use(middleware.Timeout(c.config.HTTP.RequestTimeout))
 
 	// Liveness: the process is up. Readiness: ready to serve traffic — there are
 	// no mandatory external dependencies yet, so it always reports ready; a

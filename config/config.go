@@ -41,6 +41,7 @@ type HTTP struct {
 	ReadHeaderTimeout time.Duration `env:"READ_HEADER_TIMEOUT,default=2s"`  // HTTP_READ_HEADER_TIMEOUT
 	WriteTimeout      time.Duration `env:"WRITE_TIMEOUT,default=10s"`       // HTTP_WRITE_TIMEOUT
 	IdleTimeout       time.Duration `env:"IDLE_TIMEOUT,default=120s"`       // HTTP_IDLE_TIMEOUT
+	RequestTimeout    time.Duration `env:"REQUEST_TIMEOUT,default=5s"`      // HTTP_REQUEST_TIMEOUT (per-request handler deadline)
 	RateLimitRequests int           `env:"RATE_LIMIT_REQUESTS,default=100"` // HTTP_RATE_LIMIT_REQUESTS
 	RateLimitWindow   time.Duration `env:"RATE_LIMIT_WINDOW,default=1m"`    // HTTP_RATE_LIMIT_WINDOW
 }
