@@ -6,7 +6,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v5"
 
-	"github.com/rmasclef/fizz_buzz_api/internal/domain"
+	"github.com/pimousse1099/fizz_buzz_api/internal/domain"
 )
 
 // statsResponse is the payload of the statistics endpoint: the parameters of the

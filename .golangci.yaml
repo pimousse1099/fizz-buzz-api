@@ -103,6 +103,6 @@ formatters:
       sections:
         - standard
         - default
-        - prefix(github.com/rmasclef)
+        - prefix(github.com/pimousse1099)
     gofumpt:
       extra-rules: true

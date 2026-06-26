@@ -10,8 +10,8 @@ import (
 	"github.com/labstack/echo/v5"
 	"github.com/stretchr/testify/assert"
 
-	httpserver "github.com/rmasclef/fizz_buzz_api/internal/http"
-	"github.com/rmasclef/fizz_buzz_api/internal/statsstorer"
+	httpserver "github.com/pimousse1099/fizz_buzz_api/internal/http"
+	"github.com/pimousse1099/fizz_buzz_api/internal/statsstorer"
 )
 
 // testServer builds the server with a discard logger so test runs stay quiet.

@@ -4,7 +4,7 @@ package statsstorer
 import (
 	"sync"
 
-	"github.com/rmasclef/fizz_buzz_api/internal/domain"
+	"github.com/pimousse1099/fizz_buzz_api/internal/domain"
 )
 
 // InMemory counts how many times each distinct request has been served and keeps

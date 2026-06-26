@@ -1,4 +1,4 @@
-DOCKER_REPOSITORY ?= rmasclef/fizz-buzz-api-go
+DOCKER_REPOSITORY ?= pimousse1099/fizz-buzz-api-go
 
 lint:
 	@echo "> Launch linter..."

@@ -19,7 +19,7 @@ The codebase targets Go 1.26 and is organised into small, single-responsibility 
 ### prod
 
 ```sh
-docker run --rm -p 8080:8080 rmasclef/fizz-buzz-api-go:v0.1.0
+docker run --rm -p 8080:8080 pimousse1099/fizz-buzz-api-go:v0.1.0
 ```
 
 ### dev

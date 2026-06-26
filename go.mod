@@ -1,4 +1,4 @@
-module github.com/rmasclef/fizz_buzz_api
+module github.com/pimousse1099/fizz_buzz_api
 
 go 1.26
 
