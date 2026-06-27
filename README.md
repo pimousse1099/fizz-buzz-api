@@ -55,6 +55,58 @@ Only successful (`200`) generations are counted. On a tie, the request that
 reached the maximum first is reported. Returns `404` until at least one
 successful generation has happened.
 
+### Go client
+
+```go
+package main
+
+import (
+	"encoding/json"
+	"fmt"
+	"net/http"
+)
+
+func main() {
+	const url = "http://localhost:8080/fizzbuzz?int1=3&int2=5&limit=15&str1=fizz&str2=buzz"
+
+	res, err := http.Get(url)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	defer res.Body.Close()
+
+	var sequence []string
+
+	err = json.NewDecoder(res.Body).Decode(&sequence)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	fmt.Println(sequence) // [1 2 fizz 4 buzz fizz 7 8 fizz buzz 11 fizz 13 14 fizzbuzz]
+}
+```
+
+### Errors
+
+Invalid or missing parameters return `400` with a JSON string message, read
+context-first (`failed to … : <detail>`):
+
+```sh
+curl 'http://localhost:8080/fizzbuzz?int1=3&int2=5&limit=999999&str1=a&str2=b'
+# "failed to validate generate request: limit must be between 1 and 10000, got 999999"
+
+curl 'http://localhost:8080/fizzbuzz?int1=3&int2=5&limit=15&str1=fizz'
+# "failed to validate HTTP query parameter: str2 is required"
+```
+
+Responses are gzip-compressed when the client opts in (`Accept-Encoding`):
+
+```sh
+curl --compressed 'http://localhost:8080/fizzbuzz?int1=3&int2=5&limit=15&str1=fizz&str2=buzz'
+```
+
 ## Limits
 
 - **Input validation** — the rules in the table above; `limit` is bounded by
