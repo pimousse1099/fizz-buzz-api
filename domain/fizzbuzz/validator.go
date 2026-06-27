@@ -14,19 +14,19 @@ const maxStrLen = 100
 func (r GenerateRequest) Validate(maxLimit int) error {
 	switch {
 	case r.Int1 <= 0:
-		return fmt.Errorf("int1 must be a positive integer, got %d: %w", r.Int1, ErrFailedToValidateGenerateRequest)
+		return fmt.Errorf("%w: int1 must be a positive integer, got %d", ErrFailedToValidateGenerateRequest, r.Int1)
 	case r.Int2 <= 0:
-		return fmt.Errorf("int2 must be a positive integer, got %d: %w", r.Int2, ErrFailedToValidateGenerateRequest)
+		return fmt.Errorf("%w: int2 must be a positive integer, got %d", ErrFailedToValidateGenerateRequest, r.Int2)
 	case r.Limit < 1 || r.Limit > maxLimit:
-		return fmt.Errorf("limit must be between 1 and %d, got %d: %w", maxLimit, r.Limit, ErrFailedToValidateGenerateRequest)
+		return fmt.Errorf("%w: limit must be between 1 and %d, got %d", ErrFailedToValidateGenerateRequest, maxLimit, r.Limit)
 	case r.Str1 == "":
-		return fmt.Errorf("str1 must not be empty: %w", ErrFailedToValidateGenerateRequest)
+		return fmt.Errorf("%w: str1 must not be empty", ErrFailedToValidateGenerateRequest)
 	case r.Str2 == "":
-		return fmt.Errorf("str2 must not be empty: %w", ErrFailedToValidateGenerateRequest)
+		return fmt.Errorf("%w: str2 must not be empty", ErrFailedToValidateGenerateRequest)
 	case len(r.Str1) > maxStrLen:
-		return fmt.Errorf("str1 must be at most %d characters: %w", maxStrLen, ErrFailedToValidateGenerateRequest)
+		return fmt.Errorf("%w: str1 must be at most %d characters", ErrFailedToValidateGenerateRequest, maxStrLen)
 	case len(r.Str2) > maxStrLen:
-		return fmt.Errorf("str2 must be at most %d characters: %w", maxStrLen, ErrFailedToValidateGenerateRequest)
+		return fmt.Errorf("%w: str2 must be at most %d characters", ErrFailedToValidateGenerateRequest, maxStrLen)
 	default:
 		return nil
 	}

@@ -106,12 +106,12 @@ func parseGenerateRequest(r *http.Request) (*fizzbuzz.GenerateRequest, error) {
 func parseIntParam(q url.Values, name string) (int, error) {
 	raw := q.Get(name)
 	if raw == "" {
-		return 0, fmt.Errorf("%s is required: %w", name, errInvalidQueryParam)
+		return 0, fmt.Errorf("%w: %s is required", errInvalidQueryParam, name)
 	}
 
 	v, err := strconv.Atoi(raw)
 	if err != nil {
-		return 0, fmt.Errorf("%s must be an integer: %w", name, errInvalidQueryParam)
+		return 0, fmt.Errorf("%w: %s must be an integer", errInvalidQueryParam, name)
 	}
 
 	return v, nil
@@ -120,7 +120,7 @@ func parseIntParam(q url.Values, name string) (int, error) {
 func parseStringParam(q url.Values, name string) (string, error) {
 	raw := q.Get(name)
 	if raw == "" {
-		return "", fmt.Errorf("%s is required: %w", name, errInvalidQueryParam)
+		return "", fmt.Errorf("%w: %s is required", errInvalidQueryParam, name)
 	}
 
 	return raw, nil
