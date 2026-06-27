@@ -28,3 +28,4 @@ superseded, a new ADR is created and the original is marked **Superseded by NNNN
 | [0017](0017-metrics-delegated-to-infra.md) | Metrics — Delegated to Infrastructure | Accepted |
 | [0018](0018-distributed-tracing-opentelemetry.md) | Distributed Tracing — OpenTelemetry | Accepted |
 | [0019](0019-container-and-ci-cd.md) | Container and CI/CD | Accepted |
+| [0020](0020-pin-ci-versions-no-latest.md) | Pin CI Tool and Runner Versions (No Floating `latest`) | Accepted |
