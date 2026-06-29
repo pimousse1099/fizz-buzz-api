@@ -9,7 +9,6 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/go-playground/validator/v10"
 	slogctx "github.com/veqryn/slog-context"
 
 	"github.com/pimousse1099/fizz-buzz-api/config"
@@ -31,10 +30,9 @@ func main() {
 	// automatically correlated. The level comes from config.
 	handler := slogctx.NewHandler(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: cfg.Log.Level}), nil)
 	logger := slog.New(handler)
-	validate := validator.New()
 	store := statsstorer.NewInMemory()
 
-	e := httpserver.New(logger, validate, store, cfg.HTTP, cfg.FizzBuzz.MaxLimit)
+	e := httpserver.New(logger, store, cfg.HTTP, cfg.FizzBuzz.MaxLimit)
 
 	// Cancel the start context on SIGINT/SIGTERM so the server shuts down gracefully.
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)

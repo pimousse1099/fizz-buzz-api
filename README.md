@@ -56,8 +56,9 @@ The main endpoint is `GET /fizz-buzz` and takes its five required parameters as 
 values: three unsigned integers `int1`, `int2`, `limit` and two strings `str1`, `str2`. It returns
 a JSON array of strings from 1 to `limit` where multiples of `int1` become `str1`, multiples of
 `int2` become `str2`, multiples of both become `str1str2`, and every other number is itself. Every
-parameter is required (non-empty strings, non-zero integers); a missing or invalid parameter
-returns HTTP `400` with the validator error message.
+parameter is required (non-empty strings, non-zero integers) and `limit` must not exceed
+`FIZZBUZZ_MAX_LIMIT`; a missing or invalid parameter returns HTTP `400` with a descriptive
+validation message.
 
 ### CURL
 
@@ -170,9 +171,3 @@ ceiling that fits the deployment's memory budget.
 | 2 | **No health / readiness probes** | Orchestrators (Kubernetes, ECS) cannot gauge liveness or readiness. |
 | 3 | **Limited observability** — structured slog request logs with a correlation id are emitted, but there is no distributed tracing and statistics are custom JSON, not Prometheus exposition format | Per-request latency/errors are visible in logs, but there is no trace-level insight and the stats endpoint won't scrape. |
 | 4 | **Stats are per-instance and in-memory** | Behind a load balancer the "most frequent request" is per-replica and incorrect overall, and all counts are lost on restart. |
-
-### Maintainability
-
-| # | Gap | Impact |
-|---|-----|--------|
-| 1 | **Brittle tests** — the integration tests assert on exact validator error strings | Breaks across library versions. |

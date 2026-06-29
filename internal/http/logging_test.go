@@ -11,7 +11,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/go-playground/validator/v10"
 	"github.com/stretchr/testify/assert"
 	slogctx "github.com/veqryn/slog-context"
 
@@ -40,7 +39,7 @@ func TestRecordFailureLogIsRequestCorrelated(t *testing.T) {
 	var buf bytes.Buffer
 
 	logger := slog.New(slogctx.NewHandler(slog.NewJSONHandler(&buf, nil), nil))
-	e := httpserver.New(logger, validator.New(), failingStore{}, testHTTPConfig(), testMaxLimit)
+	e := httpserver.New(logger, failingStore{}, testHTTPConfig(), testMaxLimit)
 
 	request := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/fizz-buzz?int1=2&int2=3&limit=10&str1=fizz&str2=buzz", http.NoBody)
 	response := httptest.NewRecorder()

@@ -8,7 +8,6 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v5"
 
 	"github.com/pimousse1099/fizz-buzz-api/config"
@@ -17,13 +16,13 @@ import (
 // New builds the echo server with its middlewares and routes wired. It takes only
 // the configuration it needs: the HTTP/edge settings and the fizz-buzz `limit`
 // ceiling — not the whole Config.
-func New(logger *slog.Logger, validate *validator.Validate, store StatsStorer, httpCfg config.HTTP, maxLimit uint) *echo.Echo {
+func New(logger *slog.Logger, store StatsStorer, httpCfg config.HTTP, maxLimit uint) *echo.Echo {
 	e := echo.New()
 	e.Logger = logger // echo v5 logs through slog natively
 
 	useMiddlewares(e, httpCfg)
 
-	e.GET(fizzbuzzRoute, fizzBuzzHandler(validate, store, maxLimit)) // parameters passed as query string
+	e.GET(fizzbuzzRoute, fizzBuzzHandler(store, maxLimit)) // parameters passed as query string
 	e.GET(topHitsRoute, topHitsHandler(store))
 
 	return e

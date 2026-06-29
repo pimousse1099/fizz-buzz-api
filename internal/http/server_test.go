@@ -7,7 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v5"
 	"github.com/stretchr/testify/assert"
 
@@ -40,7 +39,7 @@ func testServer() *echo.Echo {
 // testServerWithMaxLimit builds a test server whose fizz-buzz `limit` is capped
 // at maxLimit.
 func testServerWithMaxLimit(maxLimit uint) *echo.Echo {
-	return httpserver.New(slog.New(slog.DiscardHandler), validator.New(), statsstorer.NewInMemory(), testHTTPConfig(), maxLimit)
+	return httpserver.New(slog.New(slog.DiscardHandler), statsstorer.NewInMemory(), testHTTPConfig(), maxLimit)
 }
 
 func get(t *testing.T, e *echo.Echo, target string) *httptest.ResponseRecorder {
@@ -73,7 +72,22 @@ func TestFizzBuzzWithMissingParams(t *testing.T) {
 	check := assert.New(t)
 	check.Equal(http.StatusBadRequest, response.Code)
 	check.Equal(echo.MIMEApplicationJSON, response.Header().Get(echo.HeaderContentType))
-	check.JSONEq(`{"message":"Key: 'GenerateFizzBuzzRequest.Str2' Error:Field validation for 'Str2' failed on the 'required' tag"}`, response.Body.String())
+	check.JSONEq(`{"message":"failed to validate fizz-buzz request: str2 must not be empty"}`, response.Body.String())
+}
+
+func TestFizzBuzzBindError(t *testing.T) {
+	t.Parallel()
+
+	// int1=abc cannot bind into a uint -> bind error before validation
+	response := get(t, testServer(), "/fizz-buzz?int1=abc&int2=5&limit=10&str1=fizz&str2=buzz")
+
+	check := assert.New(t)
+	check.Equal(http.StatusBadRequest, response.Code, response.Body.String())
+	// our convention, naming the offending field...
+	check.Contains(response.Body.String(), "failed to bind request:")
+	check.Contains(response.Body.String(), "int1")
+	// ...and NOT leaking echo's HTTPError wrapper.
+	check.NotContains(response.Body.String(), "code=400")
 }
 
 func TestFizzBuzzLimitExceedsMax(t *testing.T) {
