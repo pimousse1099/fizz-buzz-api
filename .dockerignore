@@ -1,0 +1,12 @@
+.git
+.gitignore
+.dockerignore
+
+.idea
+
+Dockerfile
+Makefile
+
+*test.go
+README.md
+LICENSE
